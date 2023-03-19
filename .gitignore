@@ -1,3 +1,5 @@
 .venv/
 .vs/
 *.pyproj
+*.sln
+__pycache__/
