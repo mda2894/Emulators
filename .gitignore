@@ -1,5 +1,6 @@
 .venv/
 .vs/
 *.pyproj
+*.pyproj.user
 *.sln
 __pycache__/
