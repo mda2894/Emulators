@@ -12,13 +12,23 @@ class CPU:
         # Memory
         self.memory = Memory(16)
 
-    def writeMemory(self, program, start_address = 0):
+
+    def loadROM(self, program, start_address = 0):
         self.memory.write(program, start_address)
 
-    def run(self):
-        halted = False
 
-        while not halted:
+    def peek(self, address):
+        return self.memory[address]
+
+
+    def poke(self, address, value):
+        self.memory[address] = value
+
+
+    def run(self):
+        HALT = False
+
+        while not HALT:
             # fetch instruction
             self.IR = self.memory[self.PC]
 
@@ -33,7 +43,7 @@ class CPU:
             
             # decode / execute instruction
             match opcode:
-
+            
                 case 0x0:
                     self.A = self.memory[address]
 
@@ -50,8 +60,7 @@ class CPU:
                     print(bin(self.out))
 
                 case 0xF:
-                    halted = True
+                    HALT = True
 
                 case _:
                     raise ValueError(f"Invalid Opcode {opcode:04b} at Memory Address {address}")
-                    
