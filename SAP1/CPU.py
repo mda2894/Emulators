@@ -5,9 +5,12 @@ class CPU:
         # Registers
         self.A = Register("A")
         self.B = Register("B")
+
         self.PC = Register("PC", 4)
-        self.IR = Register("IR")
         self.MAR = Register("MAR", 4)
+        self.IR = Register("IR")
+        
+        self.IO = Register("IO")
 
         # Memory
         self.RAM = Memory(16)
@@ -23,6 +26,7 @@ class CPU:
             0xE : self.OUT,
             0xF : self.HLT
         }
+
 
     def program(self, program, start_address = 0):
         self.RAM.write(program, start_address)
@@ -67,16 +71,21 @@ class CPU:
     def LDA(self):
         self.A = self.RAM[self.MAR]
     
+
     def ADD(self):
         self.B = self.RAM[self.MAR]
         self.A += self.B
+
 
     def SUB(self):
         self.B = self.RAM[self.MAR]
         self.A -= self.B
 
+
     def OUT(self):
-        print(bin(self.A))
+        self.IO = self.A
+        print(self.IO)
+
 
     def HLT(self):
         self.haltFlag = True
