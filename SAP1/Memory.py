@@ -76,3 +76,20 @@ class Memory:
 
         for i in range(start_address, end_address + 1):
             print(f"{i:0{self.max_hex_chars}x}: {self.memory[i]:0{self.value_size}b}")
+
+
+# preliminary Register class. Incomplete.
+class Register(Memory):
+    def __init__(self, value_size = 8):
+        self.value_size = value_size
+        self.max_value = 2 ** value_size - 1
+
+        self.memory = 0
+
+
+    def __getitem__(self, address):
+        return self.memory[address]
+
+
+    def __setitem__(self, address, value):
+        self.memory[address] = value & self.max_value
