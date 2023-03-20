@@ -78,18 +78,33 @@ class Memory:
             print(f"{i:0{self.max_hex_chars}x}: {self.memory[i]:0{self.value_size}b}")
 
 
-# preliminary Register class. Incomplete.
+# Needs testing
 class Register(Memory):
-    def __init__(self, value_size = 8):
-        self.value_size = value_size
-        self.max_value = 2 ** value_size - 1
+    def __init__(self, name, value_size = 8):
+        self.name = name
+
+        super().__init__(self, 1, self.value_size)
 
         self.memory = 0
 
 
-    def __getitem__(self, address):
-        return self.memory[address]
+    def __getitem__(self):
+        return self.memory
 
 
-    def __setitem__(self, address, value):
-        self.memory[address] = value & self.max_value
+    def __setitem__(self, value):
+        self.memory = value & self.max_value
+
+
+    def write(self, value): 
+        self.__setitem__(value)
+
+
+    def dump(self):
+        print(f'{self.name} Register: {self.memory:0{self.value_size}b}')
+
+    
+    def increment(self):
+        self.__setitem__(self.memory + 1)
+
+

@@ -3,64 +3,80 @@ from Memory import *
 class CPU:
     def __init__(self):
         # Registers
-        self.A = 0
-        self.B = 0
-        self.PC = 0
-        self.IR = 0
-        self.OUT = 0
+        self.A = Register("A")
+        self.B = Register("B")
+        self.PC = Register("PC", 4)
+        self.IR = Register("IR")
+        self.MAR = Register("MAR", 4)
 
         # Memory
-        self.memory = Memory(16)
+        self.RAM = Memory(16)
 
+        # Flags
+        self.haltFlag = False
 
-    def loadROM(self, program, start_address = 0):
-        self.memory.write(program, start_address)
+        # Instruction table
+        self.instructionTable = {
+            0x0 : self.LDA,
+            0x1 : self.ADD,
+            0x2 : self.SUB,
+            0xE : self.OUT,
+            0xF : self.HLT
+        }
+
+    def program(self, program, start_address = 0):
+        self.RAM.write(program, start_address)
+
+    
+    def run(self):
+        self.haltFlag = False
+
+        while not self.haltFlag:
+            self.fetchInstruction()
+            self.executeInstruction()
 
 
     def peek(self, address):
-        return self.memory[address]
+        return self.RAM[address]
 
 
     def poke(self, address, value):
-        self.memory[address] = value
+        self.RAM[address] = value
 
 
-    def run(self):
-        HALT = False
+    def fetchInstruction(self):
+        self.MAR = self.PC
+        self.IR = self.RAM[self.MAR]
+        self.PC.increment()
 
-        while not HALT:
-            # fetch instruction
-            self.IR = self.memory[self.PC]
 
-            # increment pc
-            self.PC += 1
-         
-            # split instruction
-            opcode, address = self.IR >> 4, self.IR & 0x0F
+    def executeInstruction(self):
+        opcode, address = self.IR >> 4, self.IR & 0x0F
+        self.MAR = address
 
-            if self.PC > 15 and opcode != 0xF:
-                raise ValueError("Invalid Program (Program Counter Overflow): SAP-1 programs must end with a HLT instruction")
-            
-            # decode / execute instruction
-            match opcode:
-            
-                case 0x0:
-                    self.A = self.memory[address]
+        if self.PC > 15 and opcode != 0xF:
+            raise ValueError("Invalid Program (Program Counter Overflow): SAP-1 programs must end with a HLT instruction")
 
-                case 0x1:
-                    self.B = self.memory[address]
-                    self.A = (self.A + self.B) & 0xFF
+        try:
+            self.instructionTable[opcode]()
 
-                case 0x2:
-                    self.B = self.memory[address]
-                    self.A = (self.A - self.B) & 0xFF
+        except KeyError:
+            raise ValueError(f"Invalid Opcode {opcode:04b} at Memory Address {address}")
 
-                case 0xE:
-                    self.out = self.A
-                    print(bin(self.out))
+    
+    def LDA(self):
+        self.A = self.RAM[self.MAR]
+    
+    def ADD(self):
+        self.B = self.RAM[self.MAR]
+        self.A += self.B
 
-                case 0xF:
-                    HALT = True
+    def SUB(self):
+        self.B = self.RAM[self.MAR]
+        self.A -= self.B
 
-                case _:
-                    raise ValueError(f"Invalid Opcode {opcode:04b} at Memory Address {address}")
+    def OUT(self):
+        print(bin(self.A))
+
+    def HLT(self):
+        self.haltFlag = True
