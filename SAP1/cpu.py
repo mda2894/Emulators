@@ -29,7 +29,7 @@ class CPU:
 
         # Flags
         self.flags = {
-            "halt" : 0
+            "Halt" : 0
         }
 
         # Instruction table
@@ -47,13 +47,13 @@ class CPU:
 
     
     def run(self):
-        while self.flags['halt'] == 0:
+        while self.flags['Halt'] == 0:
             self.fetch_instruction()
             self.execute_instruction()
 
 
     def reset(self):
-        self.flags["halt"] = 0
+        self.flags["Halt"] = 0
         for register in self.registers:
             register.clear()
 
@@ -74,8 +74,8 @@ class CPU:
         try:
             self.instruction_table[self.OP.value]()
 
-        except KeyError:
-            raise ValueError(f"Invalid Opcode {self.OP.value:04b} at Memory Address {self.MAR.value}")
+        except KeyError as exc:
+            raise ValueError(f"Invalid Opcode {self.OP.value:04b} at Memory Address {self.MAR.value}") from exc
 
 
     # opcode execution methods
@@ -101,13 +101,18 @@ class CPU:
 
 
     def HLT(self):
-        self.flags["halt"] = 1
+        self.flags["Halt"] = 1
 
 
     # debugging methods
 
 
     def display_state(self, start_address = 0, end_address = None):
+        print('\nFlags')
+        for name, value in self.flags:
+            print(f"{name}: {value}")
+
+
         print('\nRegisters')
         for register in self.registers:
             register.bin_dump()
