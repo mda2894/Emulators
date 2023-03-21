@@ -47,12 +47,9 @@ class CPU:
 
     
     def run(self):
-        if self.flags["halt"] == 0:
-            while True:
-                self.fetch_instruction()
-                self.execute_instruction()
-        else:
-            print("CPU is halted")
+        while self.flags['halt'] == 0:
+            self.fetch_instruction()
+            self.execute_instruction()
 
 
     def reset(self):
@@ -105,7 +102,6 @@ class CPU:
 
     def HLT(self):
         self.flags["halt"] = 1
-        break
 
 
     # debugging methods
