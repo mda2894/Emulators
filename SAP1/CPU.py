@@ -1,4 +1,5 @@
 from Memory import *
+from Register import *
 
 class CPU:
     def __init__(self):
@@ -6,17 +7,26 @@ class CPU:
         self.A = Register("A")
         self.B = Register("B")
 
-        self.PC = Register("PC", 4)
-        self.MAR = Register("MAR", 4)
-        self.IR = Register("IR")
+        self.PC = Register("PC", 4) # program counter
+        self.MAR = Register("MAR", 4) # memory address register
+        self.OP = Register("OP", 4) # operation decoder register
+        self.IR = Register("IR") # instruction register
         
-        self.IO = Register("IO")
+        self.IO = Register("IO") # input/output register
+
+        self.registers = [self.A,
+                          self.B,
+                          self.PC,
+                          self.MAR,
+                          self.OP,
+                          self.IR,
+                          self.IO]
 
         # Memory
         self.RAM = Memory(16)
 
         # Flags
-        self.haltFlag = False
+        self.flags = {'halt' : 0}
 
         # Instruction table
         self.instructionTable = {
@@ -28,16 +38,72 @@ class CPU:
         }
 
 
+    def display_state(self, start_address = 0, end_address = None):
+        print('\nRegisters')
+        for register in self.registers:
+            register.bindump()
+
+        print("\nFlags")
+        for flag_name, flag_value in self.flags.items():
+            print(f"{flag_name}: {flag_value}")
+
+        print("\nRAM")
+        self.RAM.bindump(start_address, end_address)
+
+
     def program(self, program, start_address = 0):
         self.RAM.write(program, start_address)
 
     
     def run(self):
-        self.haltFlag = False
+        self.flags['halt'] = 0
 
-        while not self.haltFlag:
+        while not self.flags['halt']:
             self.fetchInstruction()
             self.executeInstruction()
+
+
+    def fetchInstruction(self):
+        self.PC.transfer_to(self.MAR)
+        self.IR.load(self.RAM, self.MAR.value)
+        self.PC.inc()
+
+
+    def executeInstruction(self):
+        self.OP.value = self.IR.msb(4) # 4 MSBs
+        self.MAR.value = self.IR.lsb(4) # 4 LSBs
+
+        if self.PC.value > 15 and self.OP.value != 0xF:
+            raise ValueError("Invalid Program (Program Counter Overflow): SAP-1 programs must end with a HLT instruction")
+
+        try:
+            self.instructionTable[self.OP.value]()
+
+        except KeyError:
+            raise ValueError(f"Invalid Opcode {self.OP.value:04b} at Memory Address {self.MAR.value}")
+
+    
+    def LDA(self):
+        self.A.load(self.RAM, self.MAR.value)
+    
+
+    def ADD(self):
+        self.B.load(self.RAM, self.MAR.value)
+        self.A.add(self.B)
+
+
+    def SUB(self):
+        self.B.load(self.RAM, self.MAR.value)
+        self.A.sub(self.B)
+
+
+    def OUT(self):
+        self.A.transfer_to(self.IO)
+        print(self.IO.value)
+
+
+    def HLT(self):
+        self.flags['halt'] = 1
 
 
     def peek(self, address):
@@ -46,46 +112,3 @@ class CPU:
 
     def poke(self, address, value):
         self.RAM[address] = value
-
-
-    def fetchInstruction(self):
-        self.MAR = self.PC
-        self.IR = self.RAM[self.MAR]
-        self.PC.increment()
-
-
-    def executeInstruction(self):
-        opcode, address = self.IR >> 4, self.IR & 0x0F
-        self.MAR = address
-
-        if self.PC > 15 and opcode != 0xF:
-            raise ValueError("Invalid Program (Program Counter Overflow): SAP-1 programs must end with a HLT instruction")
-
-        try:
-            self.instructionTable[opcode]()
-
-        except KeyError:
-            raise ValueError(f"Invalid Opcode {opcode:04b} at Memory Address {address}")
-
-    
-    def LDA(self):
-        self.A = self.RAM[self.MAR]
-    
-
-    def ADD(self):
-        self.B = self.RAM[self.MAR]
-        self.A += self.B
-
-
-    def SUB(self):
-        self.B = self.RAM[self.MAR]
-        self.A -= self.B
-
-
-    def OUT(self):
-        self.IO = self.A
-        print(self.IO)
-
-
-    def HLT(self):
-        self.haltFlag = True

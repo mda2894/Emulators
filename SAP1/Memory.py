@@ -1,12 +1,10 @@
 import math, os
 
 class Memory:
-    def __init__(self, size, value_size = 8):
+    def __init__(self, size, bits = 8):
         self.size = size
-        self.value_size = value_size
-
-        self.max_value = 2 ** value_size - 1
-        self.max_hex_chars = math.ceil(math.log(size, 16))
+        self.bits = bits
+        self.max_value = 2 ** bits - 1
 
         self.memory = [0] * size
     
@@ -45,7 +43,7 @@ class Memory:
             with open(program, 'r') as f:
                 if (line := f.readline().strip()):
                     if base == 0:
-                        if len(line) == self.value_size:
+                        if len(line) == self.bits:
                             base = 2
                         else:
                             base = 16
@@ -68,43 +66,24 @@ class Memory:
             raise ValueError(f'Invalid File')
 
 
-    def dump(self, start_address = 0, end_address = None):
+    def bindump(self, start_address = 0, end_address = None):
         end_address = end_address or self.size - 1
 
         if not 0 <= start_address <= end_address < self.size:
             raise ValueError(f"Invalid dump range: {start_address} - {end_address}")
 
         for i in range(start_address, end_address + 1):
-            print(f"{i:0{self.max_hex_chars}x}: {self.memory[i]:0{self.value_size}b}")
+            print(f"{i:0{len(str(self.size))}}: {self.memory[i]:0{self.bits}b}")
 
 
-# Needs testing
-class Register(Memory):
-    def __init__(self, name, value_size = 8):
-        self.name = name
+    def hexdump(self, start_address = 0, end_address = None):
+        end_address = end_address or self.size - 1
 
-        super().__init__(self, 1, self.value_size)
+        if not 0 <= start_address <= end_address < self.size:
+            raise ValueError(f"Invalid dump range: {start_address} - {end_address}")
 
-        self.memory = 0
-
-
-    def __getitem__(self):
-        return self.memory
-
-
-    def __setitem__(self, value):
-        self.memory = value & self.max_value
-
-
-    def write(self, value): 
-        self.__setitem__(value)
-
-
-    def dump(self):
-        print(f'{self.name} Register: {self.memory:0{self.value_size}b}')
-
-    
-    def increment(self):
-        self.__setitem__(self.memory + 1)
-
-
+        for i in range(start_address, end_address, 16):
+            row = self.memory[i:i+16]
+            row_hex = ' '.join(f"{x:0{math.ceil(self.bits // 4)}x}" for x in row)
+            row_ascii = ''.join(chr(x) if 32 <= x <= 126 else '.' for x in row)
+            print(f"{i:0{len(str(self.size))}}: {row_hex.ljust(48)}  {row_ascii}")
