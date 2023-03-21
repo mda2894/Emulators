@@ -27,6 +27,10 @@ class Register:
         self.value -= 1
 
 
+    def clear(self):
+        self.value = 0
+
+
     def transfer_to(self, other):
         other.value = self.value
 
@@ -55,9 +59,9 @@ class Register:
         return self.value & 2 ** bits - 1
 
 
-    def bindump(self):
+    def bin_dump(self):
         print(f'{self.name} Register: {self.value:0{self.bits}b}')
 
 
-    def hexdump(self):
+    def hex_dump(self):
         print(f'{self.name} Register: {self.value:0{math.ceil(self.bits // 4)}x}')

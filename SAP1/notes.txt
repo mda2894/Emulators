@@ -4,5 +4,6 @@ Potential Improvements:
 - (Done) add ability to display full CPU state at once (registers, flags, memory)
 - implement clock cycling, with properly timed microinstructions
 - implement step by step operation mode (by instruction or by clock pulse) for debugging
+- flags register class
 - bus?
 - assembler?

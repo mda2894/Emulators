@@ -1,4 +1,5 @@
-import math, os
+import math
+import os
 
 class Memory:
     def __init__(self, size, bits = 8):
@@ -63,10 +64,10 @@ class Memory:
                     index += 1
         
         else:
-            raise ValueError(f'Invalid File')
+            raise ValueError("Invalid File")
 
 
-    def bindump(self, start_address = 0, end_address = None):
+    def bin_dump(self, start_address = 0, end_address = None):
         end_address = end_address or self.size - 1
 
         if not 0 <= start_address <= end_address < self.size:
@@ -76,7 +77,7 @@ class Memory:
             print(f"{i:0{len(str(self.size))}}: {self.memory[i]:0{self.bits}b}")
 
 
-    def hexdump(self, start_address = 0, end_address = None):
+    def hex_dump(self, start_address = 0, end_address = None):
         end_address = end_address or self.size - 1
 
         if not 0 <= start_address <= end_address < self.size:

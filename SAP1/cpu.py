@@ -1,35 +1,39 @@
-from Memory import *
-from Register import *
+from memory import Memory
+from register import Register
 
 class CPU:
     def __init__(self):
+        # Memory
+        self.RAM = Memory(16)
+
         # Registers
         self.A = Register("A")
         self.B = Register("B")
 
         self.PC = Register("PC", 4) # program counter
         self.MAR = Register("MAR", 4) # memory address register
-        self.OP = Register("OP", 4) # operation decoder register
+        self.OP = Register("OP", 4) # operation decode register
         self.IR = Register("IR") # instruction register
-        
+
         self.IO = Register("IO") # input/output register
 
-        self.registers = [self.A,
-                          self.B,
-                          self.PC,
-                          self.MAR,
-                          self.OP,
-                          self.IR,
-                          self.IO]
-
-        # Memory
-        self.RAM = Memory(16)
+        self.registers = [
+            self.A,
+            self.B,
+            self.PC,
+            self.MAR,
+            self.OP,
+            self.IR,
+            self.IO
+        ]
 
         # Flags
-        self.flags = {'halt' : 0}
+        self.flags = {
+            "halt" : 0
+        }
 
         # Instruction table
-        self.instructionTable = {
+        self.instruction_table = {
             0x0 : self.LDA,
             0x1 : self.ADD,
             0x2 : self.SUB,
@@ -38,51 +42,48 @@ class CPU:
         }
 
 
-    def display_state(self, start_address = 0, end_address = None):
-        print('\nRegisters')
-        for register in self.registers:
-            register.bindump()
-
-        print("\nFlags")
-        for flag_name, flag_value in self.flags.items():
-            print(f"{flag_name}: {flag_value}")
-
-        print("\nRAM")
-        self.RAM.bindump(start_address, end_address)
-
-
     def program(self, program, start_address = 0):
         self.RAM.write(program, start_address)
 
     
     def run(self):
-        self.flags['halt'] = 0
+        if self.flags["halt"] == 0:
+            while True:
+                self.fetch_instruction()
+                self.execute_instruction()
+        else:
+            print("CPU is halted")
 
-        while not self.flags['halt']:
-            self.fetchInstruction()
-            self.executeInstruction()
+
+    def reset(self):
+        self.flags["halt"] = 0
+        for register in self.registers:
+            register.clear()
 
 
-    def fetchInstruction(self):
+    def fetch_instruction(self):
         self.PC.transfer_to(self.MAR)
         self.IR.load(self.RAM, self.MAR.value)
         self.PC.inc()
 
 
-    def executeInstruction(self):
-        self.OP.value = self.IR.msb(4) # 4 MSBs
-        self.MAR.value = self.IR.lsb(4) # 4 LSBs
+    def execute_instruction(self):
+        self.OP.value = self.IR.msb(4)
+        self.MAR.value = self.IR.lsb(4)
 
         if self.PC.value > 15 and self.OP.value != 0xF:
             raise ValueError("Invalid Program (Program Counter Overflow): SAP-1 programs must end with a HLT instruction")
 
         try:
-            self.instructionTable[self.OP.value]()
+            self.instruction_table[self.OP.value]()
 
         except KeyError:
             raise ValueError(f"Invalid Opcode {self.OP.value:04b} at Memory Address {self.MAR.value}")
 
+
+    # opcode execution methods
     
+
     def LDA(self):
         self.A.load(self.RAM, self.MAR.value)
     
@@ -103,7 +104,20 @@ class CPU:
 
 
     def HLT(self):
-        self.flags['halt'] = 1
+        self.flags["halt"] = 1
+        break
+
+
+    # debugging methods
+
+
+    def display_state(self, start_address = 0, end_address = None):
+        print('\nRegisters')
+        for register in self.registers:
+            register.bin_dump()
+
+        print("\nRAM")
+        self.RAM.bin_dump(start_address, end_address)
 
 
     def peek(self, address):

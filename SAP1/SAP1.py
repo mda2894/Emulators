@@ -1,4 +1,4 @@
-from CPU import *
+from cpu import CPU
 
 def main():
     SAP1 = CPU()
