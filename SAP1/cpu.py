@@ -79,11 +79,11 @@ class CPU:
 
 
     # opcode execution methods
-    
+
 
     def LDA(self):
         self.A.load(self.RAM, self.MAR.value)
-    
+
 
     def ADD(self):
         self.B.load(self.RAM, self.MAR.value)
