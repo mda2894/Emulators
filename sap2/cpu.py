@@ -1,3 +1,4 @@
+'''SAP-2 CPU - Still updating from SAP-1'''
 from lib.memory import Memory
 from lib.register import Register
 from lib.clock import Clock
