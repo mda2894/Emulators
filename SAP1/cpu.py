@@ -3,12 +3,12 @@ from register import Register
 from clock import Clock
 
 class CPU:
-    def __init__(self):
+    def __init__(self, clockspeed = 1_000_000):
         # Memory
         self.RAM = Memory(16)
 
         # Clock
-        self.clock = Clock(1000) # 1 kHz clock
+        self.clock = Clock(clockspeed)
 
         # Registers
         self.A = Register("A")
@@ -51,13 +51,20 @@ class CPU:
 
     
     def run(self):
+        cycles = 0
         self.clock.start()
+        start = self.clock.start_time
 
         while self.flags['Halt'] == 0:
             self.fetch_instruction()
             self.execute_instruction()
             
+            cycles += 1
             self.clock.pulse()
+
+        finish = self.clock.start_time
+
+        print(cycles / (finish - start))
 
 
     def reset(self):
