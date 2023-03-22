@@ -1,10 +1,14 @@
 from memory import Memory
 from register import Register
+from clock import Clock
 
 class CPU:
     def __init__(self):
         # Memory
         self.RAM = Memory(16)
+
+        # Clock
+        self.clock = Clock(1000) # 1 kHz clock
 
         # Registers
         self.A = Register("A")
@@ -47,9 +51,12 @@ class CPU:
 
     
     def run(self):
+        self.clock.start()
         while self.flags['Halt'] == 0:
             self.fetch_instruction()
             self.execute_instruction()
+            
+            self.clock.wait(6)
 
 
     def reset(self):
@@ -97,7 +104,7 @@ class CPU:
 
     def OUT(self):
         self.A.transfer_to(self.IO)
-        print(self.IO.value)
+        print(f"{self.IO.value:08b}")
 
 
     def HLT(self):
