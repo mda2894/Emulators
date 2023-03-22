@@ -1,7 +1,7 @@
-from memory import Memory
-from register import Register
-from clock import Clock
-from flagregister import FlagRegister
+from lib.memory import Memory
+from lib.register import Register
+from lib.clock import Clock
+from lib.flagregister import FlagRegister
 
 class CPU:
     def __init__(self, clockspeed = 1_000_000):
