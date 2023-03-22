@@ -5,3 +5,4 @@
 *.sln
 __pycache__/
 *.pyperf
+SAP1/env/
