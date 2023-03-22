@@ -13,13 +13,11 @@ class Clock:
     def reset(self):
         self.start_time = time.perf_counter()
     
-    def wait(self, cycles):
+    def pulse(self, cycles = 1):
         expected_time = cycles * self.cycle_time
         elapsed_time = time.perf_counter() - self.start_time
         
-        time.sleep(expected_time - elapsed_time)
+        if expected_time - elapsed_time > 0:
+            time.sleep(expected_time - elapsed_time)
 
         self.reset()
-
-    def pulse(self):
-        self.wait(1)

@@ -52,11 +52,12 @@ class CPU:
     
     def run(self):
         self.clock.start()
+
         while self.flags['Halt'] == 0:
             self.fetch_instruction()
             self.execute_instruction()
             
-            self.clock.wait(6)
+            self.clock.pulse()
 
 
     def reset(self):
