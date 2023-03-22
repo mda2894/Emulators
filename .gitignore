@@ -4,3 +4,4 @@
 *.pyproj.user
 *.sln
 __pycache__/
+*.pyperf
