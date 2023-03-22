@@ -1,4 +1,3 @@
 Stuff that can wait for more advanced CPUs:
-- flags register
 - bus?
 - assembler
