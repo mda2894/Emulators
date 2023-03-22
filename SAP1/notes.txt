@@ -1,6 +1,3 @@
-Potential Improvements:
-- break down fetch and execute into clocked microinstructions
-
 Stuff that can wait for more advanced CPUs:
 - flags register
 - bus?

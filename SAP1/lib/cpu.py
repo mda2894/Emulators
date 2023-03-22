@@ -1,6 +1,7 @@
 from memory import Memory
 from register import Register
 from clock import Clock
+from flagregister import FlagRegister
 
 class CPU:
     def __init__(self, clockspeed = 1_000_000):
@@ -31,10 +32,8 @@ class CPU:
             self.IO
         ]
 
-        # Flags
-        self.flags = {
-            "Halt" : 0
-        }
+        # Flag Register
+        self.flag = FlagRegister("Halt")
 
         # Instruction table
         self.instruction_table = {
@@ -51,32 +50,28 @@ class CPU:
 
     
     def run(self):
-        cycles = 0
-        self.clock.start()
-        start = self.clock.start_time
+        self.clock.reset()
 
-        while self.flags['Halt'] == 0:
+        while not self.flag["Halt"]:
             self.fetch_instruction()
             self.execute_instruction()
-            
-            cycles += 1
-            self.clock.pulse()
-
-        finish = self.clock.start_time
-
-        print(cycles / (finish - start))
 
 
     def reset(self):
-        self.flags["Halt"] = 0
+        self.flag.clear_all()
+        
         for register in self.registers:
             register.clear()
+
+        self.clock.reset()
 
 
     def fetch_instruction(self):
         self.PC.transfer_to(self.MAR)
         self.IR.load(self.RAM, self.MAR.value)
         self.PC.inc()
+
+        self.clock.pulse(3)
 
 
     def execute_instruction(self):
@@ -88,9 +83,10 @@ class CPU:
 
         try:
             self.instruction_table[self.OP.value]()
-
         except KeyError as exc:
             raise ValueError(f"Invalid Opcode {self.OP.value:04b} at Memory Address {self.MAR.value}") from exc
+
+        self.clock.pulse(3)
 
 
     # opcode execution methods
@@ -116,7 +112,8 @@ class CPU:
 
 
     def HLT(self):
-        self.flags["Halt"] = 1
+        self.flag.set("Halt")
+        self.clock.stop()
 
 
     # debugging methods
@@ -124,9 +121,7 @@ class CPU:
 
     def display_state(self, start_address = 0, end_address = None):
         print('\nFlags')
-        for name, value in self.flags:
-            print(f"{name}: {value}")
-
+        self.flag.dump()
 
         print('\nRegisters')
         for register in self.registers:
