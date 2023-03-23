@@ -77,7 +77,6 @@ class CPU:
 
     def execute_instruction(self):
         self.OP.value = self.IR.msb(4)
-        self.MAR.value = self.IR.lsb(4)
 
         if self.PC.value > 15 and self.OP.value != 0xF:
             raise ValueError("Invalid Program (Program Counter Overflow): SAP-1 programs must end with a HLT instruction")
@@ -85,7 +84,7 @@ class CPU:
         try:
             self.instruction_table[self.OP.value]()
         except KeyError as exc:
-            raise ValueError(f"Invalid Opcode {self.OP.value:04b} at Memory Address {self.MAR.value}") from exc
+            raise ValueError(f"Invalid Opcode {self.OP.value:04b} at Memory Address {self.MAR.value:04b}") from exc
 
         self.clock.pulse(3)
 
@@ -94,15 +93,18 @@ class CPU:
 
 
     def LDA(self):
+        self.MAR.value = self.IR.lsb(4)
         self.A.load(self.RAM, self.MAR.value)
 
 
     def ADD(self):
+        self.MAR.value = self.IR.lsb(4)
         self.B.load(self.RAM, self.MAR.value)
         self.A.add(self.B)
 
 
     def SUB(self):
+        self.MAR.value = self.IR.lsb(4)
         self.B.load(self.RAM, self.MAR.value)
         self.A.sub(self.B)
 

@@ -2,10 +2,10 @@ import math
 import os
 
 class Memory:
-    def __init__(self, size, bits = 8):
+    def __init__(self, size, width = 8):
         self.size = size
-        self.bits = bits
-        self.max_value = 2 ** bits - 1
+        self.width = width
+        self.max_value = 2 ** width - 1
 
         self.memory = [0] * size
     
@@ -44,7 +44,7 @@ class Memory:
             with open(program, 'r') as f:
                 if (line := f.readline().strip()):
                     if base == 0:
-                        if len(line) == self.bits:
+                        if len(line) == self.width:
                             base = 2
                         else:
                             base = 16
@@ -74,7 +74,7 @@ class Memory:
             raise ValueError(f"Invalid dump range: {start_address} - {end_address}")
 
         for i in range(start_address, end_address + 1):
-            print(f"{i:0{len(str(self.size))}}: {self.memory[i]:0{self.bits}b}")
+            print(f"{i:0{len(str(self.size))}}: {self.memory[i]:0{self.width}b}")
 
 
     def hex_dump(self, start_address = 0, end_address = None):
@@ -85,6 +85,6 @@ class Memory:
 
         for i in range(start_address, end_address, 16):
             row = self.memory[i:i+16]
-            row_hex = ' '.join(f"{x:0{math.ceil(self.bits // 4)}x}" for x in row)
+            row_hex = ' '.join(f"{x:0{math.ceil(self.width // 4)}x}" for x in row)
             row_ascii = ''.join(chr(x) if 32 <= x <= 126 else '.' for x in row)
             print(f"{i:0{len(str(self.size))}}: {row_hex.ljust(48)}  {row_ascii}")

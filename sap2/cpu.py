@@ -8,51 +8,39 @@ K = 1024
 
 class CPU:
     def __init__(self, clockspeed = 1_000_000):
+        '''Initialize CPU hardware'''
+        
         # Memory
-        self.RAM = Memory(64*K)
+        self.memory = Memory(64*K)
 
         # Clock
         self.clock = Clock(clockspeed)
 
-        # Registers
-        self.A = Register("A") # accumulator
-        self.TMP = Register("TMP") # temp register used for ALU instructions
+        # Registers - create register variables while appending them to self.registers list
+        self.registers = []
 
-        self.B = Register("B") # B & C general purpose registers
-        self.C = Register("C")
+        self.A = self.registers.append(Register("A")) or self.registers[-1] # accumulator
+        self.TMP = self.registers.append(Register("TMP")) or self.registers[-1] # temp register used for ALU instructions
 
-        self.PC = Register("PC", 16) # program counter
-        self.MAR = Register("MAR", 16) # memory address register
+        self.B = self.registers.append(Register("B")) or self.registers[-1] # B & C general purpose registers
+        self.C = self.registers.append(Register("C")) or self.registers[-1]
 
-        self.MDR = Register("MDR") # memory data register
-        self.IR = Register("IR") # instruction register
-        self.OP = Register("OP") # operation decode register
+        self.PC = self.registers.append(Register("PC", 16)) or self.registers[-1] # program counter - 16 bits
+        self.MAR = self.registers.append(Register("MAR", 16)) or self.registers[-1] # memory address register - 16 bits
+
+        self.MDR = self.registers.append(Register("MDR")) or self.registers[-1] # memory data register
+        self.IR = self.registers.append(Register("IR")) or self.registers[-1] # instruction register
+        self.OP = self.registers.append(Register("OP")) or self.registers[-1] # operation decoder
 
         # IO
-        self.IN1 = Register("IN1") # input ports 1 & 2
-        self.IN2 = Register("IN2")
+        self.IN1 = self.registers.append(Register("IN1")) or self.registers[-1] # input ports 1 & 2
+        self.IN2 = self.registers.append(Register("IN2")) or self.registers[-1]
 
-        self.OUT3 = Register("OUT3") # output ports 3 & 4
-        self.OUT4 = Register("OUT4")
-
-        self.registers = [
-            self.A,
-            self.TMP,
-            self.B,
-            self.C,
-            self.PC,
-            self.MAR,
-            self.MDR,
-            self.IR,
-            self.OP,
-            self.IN1,
-            self.IN2,
-            self.OUT3,
-            self.OUT4
-        ]
+        self.OUT3 = self.registers.append(Register("OUT3")) or self.registers[-1] # output ports 3 & 4
+        self.OUT4 = self.registers.append(Register("OUT4")) or self.registers[-1]
 
         # Flag Register
-        self.flag = FlagRegister(
+        self.flags = FlagRegister(
             "halt",
             "sign",
             "zero"
@@ -106,20 +94,23 @@ class CPU:
         }
 
 
+    '''CPU operation methods'''
+
+
     def program(self, program, start_address = 0):
-        self.RAM.write(program, start_address)
+        self.memory.write(program, start_address)
 
     
     def run(self):
         self.clock.reset()
 
-        while not self.flag["halt"]:
+        while not self.flags["halt"]:
             self.fetch_instruction()
             self.execute_instruction()
 
 
     def reset(self):
-        self.flag.clear_all()
+        self.flags.clear_all()
         
         for register in self.registers:
             register.clear()
@@ -129,72 +120,45 @@ class CPU:
 
     def fetch_instruction(self):
         self.PC.transfer_to(self.MAR)
-        self.IR.load(self.RAM, self.MAR.value)
         self.PC.inc()
-
-        self.clock.pulse(3)
+        self.MDR.load(self.memory, self.MAR.value)
+        self.MDR.transfer_to(self.IR)
 
 
     def execute_instruction(self):
-        self.OP.value = self.IR.msb(4)
-        self.MAR.value = self.IR.lsb(4)
-
-        if self.PC.value > 15 and self.OP.value != 0xF:
-            raise ValueError("Invalid Program (Program Counter Overflow): SAP-1 programs must end with a HLT instruction")
+        self.IR.transfer_to(self.OP)
 
         try:
             self.instruction_table[self.OP.value]()
         except KeyError as exc:
-            raise ValueError(f"Invalid Opcode {self.OP.value:04b} at Memory Address {self.MAR.value}") from exc
+            raise ValueError(f"Invalid Opcode {self.OP.value:02x} at Memory Address {self.MAR.value:04x}") from exc
 
         self.clock.pulse(3)
 
 
-    # debugging methods
+    ''' debugging methods '''
 
 
     def display_state(self, start_address = 0, end_address = None):
         print('\nFlags')
-        self.flag.dump()
+        self.flags.dump()
 
         print('\nRegisters')
         for register in self.registers:
             register.bin_dump()
 
-        print("\nRAM")
-        self.RAM.bin_dump(start_address, end_address)
+        print("\nMemory")
+        self.memory.bin_dump(start_address, end_address)
 
 
     def peek(self, address):
-        return self.RAM[address]
+        return self.memory[address]
 
 
     def poke(self, address, value):
-        self.RAM[address] = value
+        self.memory[address] = value
 
 
-    # instruction execution methods
+    ''' instruction execution methods '''
 
 
-    def LDA(self):
-        self.A.load(self.RAM, self.MAR.value)
-
-
-    def ADD(self):
-        self.B.load(self.RAM, self.MAR.value)
-        self.A.add(self.B)
-
-
-    def SUB(self):
-        self.B.load(self.RAM, self.MAR.value)
-        self.A.sub(self.B)
-
-
-    def OUT(self):
-        self.A.transfer_to(self.IO)
-        print(f"{self.IO.value:08b}")
-
-
-    def HLT(self):
-        self.flag.set("halt")
-        self.clock.stop()
