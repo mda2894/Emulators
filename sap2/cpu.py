@@ -150,7 +150,31 @@ class CPU:
         self.clock.pulse(3)
 
 
-    # opcode execution methods
+    # debugging methods
+
+
+    def display_state(self, start_address = 0, end_address = None):
+        print('\nFlags')
+        self.flag.dump()
+
+        print('\nRegisters')
+        for register in self.registers:
+            register.bin_dump()
+
+        print("\nRAM")
+        self.RAM.bin_dump(start_address, end_address)
+
+
+    def peek(self, address):
+        return self.RAM[address]
+
+
+    def poke(self, address, value):
+        self.RAM[address] = value
+
+
+
+    # instruction execution methods
 
 
     def LDA(self):
@@ -175,26 +199,3 @@ class CPU:
     def HLT(self):
         self.flag.set("halt")
         self.clock.stop()
-
-
-    # debugging methods
-
-
-    def display_state(self, start_address = 0, end_address = None):
-        print('\nFlags')
-        self.flag.dump()
-
-        print('\nRegisters')
-        for register in self.registers:
-            register.bin_dump()
-
-        print("\nRAM")
-        self.RAM.bin_dump(start_address, end_address)
-
-
-    def peek(self, address):
-        return self.RAM[address]
-
-
-    def poke(self, address, value):
-        self.RAM[address] = value
