@@ -4,45 +4,105 @@ from lib.register import Register
 from lib.clock import Clock
 from lib.flagregister import FlagRegister
 
+K = 1024
+
 class CPU:
     def __init__(self, clockspeed = 1_000_000):
         # Memory
-        self.RAM = Memory(16)
+        self.RAM = Memory(64*K)
 
         # Clock
         self.clock = Clock(clockspeed)
 
         # Registers
-        self.A = Register("A")
-        self.B = Register("B")
+        self.A = Register("A") # accumulator
+        self.TMP = Register("TMP") # temp register used for ALU instructions
 
-        self.PC = Register("PC", 4) # program counter
-        self.MAR = Register("MAR", 4) # memory address register
-        self.OP = Register("OP", 4) # operation decode register
+        self.B = Register("B") # B & C general purpose registers
+        self.C = Register("C")
+
+        self.PC = Register("PC", 16) # program counter
+        self.MAR = Register("MAR", 16) # memory address register
+
+        self.MDR = Register("MDR") # memory data register
         self.IR = Register("IR") # instruction register
+        self.OP = Register("OP") # operation decode register
 
-        self.IO = Register("IO") # input/output register
+        # IO
+        self.IN1 = Register("IN1") # input ports 1 & 2
+        self.IN2 = Register("IN2")
+
+        self.OUT3 = Register("OUT3") # output ports 3 & 4
+        self.OUT4 = Register("OUT4")
 
         self.registers = [
             self.A,
+            self.TMP,
             self.B,
+            self.C,
             self.PC,
             self.MAR,
-            self.OP,
+            self.MDR,
             self.IR,
-            self.IO
+            self.OP,
+            self.IN1,
+            self.IN2,
+            self.OUT3,
+            self.OUT4
         ]
 
         # Flag Register
-        self.flag = FlagRegister("Halt")
+        self.flag = FlagRegister(
+            "halt",
+            "sign",
+            "zero"
+        )
 
         # Instruction table
         self.instruction_table = {
-            0x0 : self.LDA,
-            0x1 : self.ADD,
-            0x2 : self.SUB,
-            0xE : self.OUT,
-            0xF : self.HLT
+            0x00 : self.NOP,
+            0x04 : self.INRB,
+            0x05 : self.DCRB,
+            0x06 : self.MVIB,
+            0x0C : self.INRC,
+            0x0D : self.DCRC,
+            0x0E : self.MVIC,
+            0x17 : self.RAL,
+            0x1F : self.RAR,
+            0x2F : self.CMA,
+            0x32 : self.STA,
+            0x3A : self.LDA,
+            0x3C : self.INRA,
+            0x3D : self.DCRA,
+            0x3E : self.MVIA,
+            0x41 : self.MOVBC,
+            0x47 : self.MOVBA,
+            0x48 : self.MOVCB,
+            0x4F : self.MOVCA,
+            0x76 : self.HLT,
+            0x78 : self.MOVAB,
+            0x79 : self.MOVAC,
+            0x80 : self.ADDB,
+            0x81 : self.ADDC,
+            0x90 : self.SUBB,
+            0x91 : self.SUBC,
+            0xA0 : self.ANAB,
+            0xA1 : self.ANAC,
+            0xA8 : self.XRAB,
+            0xA9 : self.XRAC,
+            0xB0 : self.ORAB,
+            0xB1 : self.ORAC,
+            0xC2 : self.JNZ,
+            0xC3 : self.JMP,
+            0xC9 : self.RET,
+            0xCA : self.JZ,
+            0xCD : self.CALL,
+            0xD3 : self.OUT,
+            0xDB : self.IN,
+            0xE6 : self.ANI,
+            0xEE : self.XRI,
+            0xF6 : self.ORI,
+            0xFA : self.JM
         }
 
 
@@ -53,7 +113,7 @@ class CPU:
     def run(self):
         self.clock.reset()
 
-        while not self.flag["Halt"]:
+        while not self.flag["halt"]:
             self.fetch_instruction()
             self.execute_instruction()
 
@@ -113,7 +173,7 @@ class CPU:
 
 
     def HLT(self):
-        self.flag.set("Halt")
+        self.flag.set("halt")
         self.clock.stop()
 
 
