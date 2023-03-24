@@ -75,12 +75,40 @@ class Register:
         self.value -= 1
 
 
+    def comp(self):
+        self.value ^= self.max_value
+
+
     def add(self, other):
         self.value += other.value
 
 
     def sub(self, other):
         self.value -= other.value
+
+
+    def and_reg(self, other):
+        self.value &= other.value
+
+
+    def and_imm(self, val):
+        self.value &= val
+
+
+    def or_reg(self, other):
+        self.value |= other.value
+
+
+    def or_imm(self, val):
+        self.value |= val
+
+
+    def xor_reg(self, other):
+        self.value ^= other.value
+
+
+    def xor_imm(self, val):
+        self.value ^= val
 
 
     def ror(self, rot_bits = 1):

@@ -20,17 +20,16 @@ class CPU:
         self.registers = []
 
         self.A = self.registers.append(Register("A")) or self.registers[-1] # accumulator
-        self.TMP = self.registers.append(Register("TMP")) or self.registers[-1] # temp register used for ALU instructions
+        self.TMP = self.registers.append(Register("TMP")) or self.registers[-1] # TMP register for ALU operations
 
         self.B = self.registers.append(Register("B")) or self.registers[-1] # B & C general purpose registers
         self.C = self.registers.append(Register("C")) or self.registers[-1]
 
         self.PC = self.registers.append(Register("PC", 16)) or self.registers[-1] # program counter - 16 bits
         self.MAR = self.registers.append(Register("MAR", 16)) or self.registers[-1] # memory address register - 16 bits
-
         self.MDR = self.registers.append(Register("MDR")) or self.registers[-1] # memory data register
+
         self.IR = self.registers.append(Register("IR")) or self.registers[-1] # instruction register
-        self.OP = self.registers.append(Register("OP")) or self.registers[-1] # operation decoder
 
         # IO
         self.IN1 = self.registers.append(Register("IN1")) or self.registers[-1] # input ports 1 & 2
@@ -100,14 +99,6 @@ class CPU:
     def program(self, program, start_address = 0):
         self.memory.write(program, start_address)
 
-    
-    def run(self):
-        self.clock.reset()
-
-        while not self.flags["halt"]:
-            self.fetch_instruction()
-            self.execute_instruction()
-
 
     def reset(self):
         self.flags.clear_all()
@@ -117,26 +108,52 @@ class CPU:
 
         self.clock.reset()
 
+    
+    def run(self):
+        self.clock.reset()
+
+        while not self.flags["halt"]:
+            self.fetch_instruction()
+            self.execute_instruction()
+
 
     def fetch_instruction(self):
-        self.PC.transfer_to(self.MAR)
+        self.IR.load(self.memory, self.PC.value)
         self.PC.inc()
-        self.MDR.load(self.memory, self.MAR.value)
-        self.MDR.transfer_to(self.IR)
 
+
+    def fetch_byte(self):
+        self.TMP.load(self.memory, self.PC.value) # load byte into TMP
+        self.PC.inc()
+
+
+    def fetch_address(self):
+        self.TMP.load(self.memory, self.PC.value) # load lower byte of address into TMP
+        self.PC.inc()
+        
+        self.MDR.load(self.memory, self.PC.value) # load upper byte of address into MDR
+        self.PC.inc()
 
     def execute_instruction(self):
-        self.IR.transfer_to(self.OP)
-
         try:
-            self.instruction_table[self.OP.value]()
+            self.instruction_table[self.IR.value]()
         except KeyError as exc:
-            raise ValueError(f"Invalid Opcode {self.OP.value:02x} at Memory Address {self.MAR.value:04x}") from exc
-
-        self.clock.pulse(3)
+            raise ValueError(f"Invalid Opcode {self.IR.value:02x} at Memory Address {self.MAR.value:04x}") from exc
 
 
-    ''' debugging methods '''
+    def update_flags(self):
+        if self.A.value == 0:
+            self.flags.set("zero")
+        else:
+            self.flags.clear("zero")
+        
+        if self.A.msb():
+            self.flags.set("sign")
+        else:
+            self.flags.clear("sign")
+
+
+    '''debugging methods'''
 
 
     def display_state(self, start_address = 0, end_address = None):
@@ -151,14 +168,266 @@ class CPU:
         self.memory.bin_dump(start_address, end_address)
 
 
-    def peek(self, address):
-        return self.memory[address]
+    '''instruction execution methods'''
 
 
-    def poke(self, address, value):
-        self.memory[address] = value
+    def ADDB(self):
+        self.A.add(self.B)
+
+        self.update_flags()
+        self.clock.pulse(4)
 
 
-    ''' instruction execution methods '''
+    def ADDC(self):
+        self.A.add(self.C)
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+    
+    def ANAB(self):
+        self.A.and_reg(B)
+
+        self.update_flags()
+        self.clock.pulse(4)
 
 
+    def ANAC(self):
+        self.A.and_reg(C)
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def ANI(self):
+        self.fetch_byte()
+
+        self.A.and_reg(self.TMP)
+
+        self.update_flags()
+        self.clock.pulse(7)
+
+
+    def CALL(self):
+        self.memory[0xFFFE] = self.PC.value # store lower byte of PC
+        self.memory[0XFFFF] = self.PC.value >> 8 # store upper byte of PC
+
+        self.fetch_address() # fetch subroutine address
+        self.PC.value = self.MDR.value << 8 | self.TMP.value # load subroutine address into PC
+
+        self.clock.pulse(18)
+
+
+    def CMA(self):
+        self.A.comp()
+
+        self.clock.pulse(4)
+
+
+    def DCRA(self):
+        self.A.dec()
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def DCRB(self):
+        self.B.dec()
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def DCRC(self):
+        self.C.dec()
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def HLT(self):
+        self.flags.set("halt")
+
+        self.clock.pulse(5)
+        self.clock.stop()
+    
+    
+    def INRA(self):
+        self.A.inc()
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def INRB(self):
+        self.B.inc()
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def INRC(self):
+        self.C.inc()
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def LDA(self):
+        self.fetch_address()
+
+        self.MAR.value = self.MDR.value << 8 | self.TMP.value
+        self.A.load(self.memory, self.MAR.value)
+
+        self.clock.pulse(13)
+
+
+    def MOVAB(self):
+        self.B.transfer_to(self.A)
+
+        self.clock.pulse(4)
+
+
+    def MOVAC(self):
+        self.C.transfer_to(self.A)
+
+        self.clock.pulse(4)
+
+
+    def MOVBA(self):
+        self.A.transfer_to(self.B)
+
+        self.clock.pulse(4)
+
+
+    def MOVBC(self):
+        self.C.transfer_to(self.B)
+
+        self.clock.pulse(4)
+
+
+    def MOVCA(self):
+        self.A.transfer_to(self.C)
+
+        self.clock.pulse(4)
+
+
+    def MOVCB(self):
+        self.B.transfer_to(self.C)
+
+        self.clock.pulse(4)
+
+
+    def MVIA(self):
+        self.fetch_byte()
+
+        self.TMP.transfer_to(self.A)
+
+        self.clock.pulse(7)
+
+
+    def MVIB(self):
+        self.fetch_byte()
+
+        self.TMP.transfer_to(self.B)
+
+        self.clock.pulse(7)
+
+
+    def MVIC(self):
+        self.fetch_byte()
+
+        self.TMP.transfer_to(self.C)
+
+        self.clock.pulse(7)
+
+
+    def NOP(self):
+        self.clock.pulse(4)
+
+
+    def ORAB(self):
+        self.A.or_reg(self.B)
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def ORAC(self):
+        self.A.or_reg(self.C)
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def ORI(self):
+        self.fetch_byte()
+
+        self.A.or_reg(self.TMP)
+
+        self.update_flags()
+        self.clock.pulse(7)
+
+
+    def RAL(self):
+        self.A.rol()
+
+        self.clock.pulse(4)
+
+
+    def RAR(self):
+        self.A.ror()
+
+        self.clock.pulse(4)
+
+
+    def RET(self):
+        self.PC.value = self.memory[0xFFFF] << 8 | self.memory[0xFFFE]
+
+        self.clock.pulse(10)
+
+
+    def STA(self):
+        self.fetch_address()
+
+        self.MAR.value = self.MDR.value << 8 | self.TMP.value
+        self.A.store(self.memory, self.MAR.value)
+
+        self.clock.pulse(13)
+
+
+    def SUBB(self):
+        self.A.sub(self.B)
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def SUBC(self):
+        self.A.sub(self.C)
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def XRAB(self):
+        self.A.xor_reg(self.B)
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def XRAC(self):
+        self.A.xor_reg(self.C)
+
+        self.update_flags()
+        self.clock.pulse(4)
+
+
+    def XRI(self):
+        self.fetch_byte()
+
+        self.A.xor_reg(self.TMP)
+
+        self.update_flags()
+        self.clock.pulse(7)
