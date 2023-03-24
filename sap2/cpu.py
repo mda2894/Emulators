@@ -250,6 +250,21 @@ class CPU:
 
         self.clock.pulse(5)
         self.clock.stop()
+
+
+    def IN(self):
+        self.fetch_byte()
+
+        if self.TMP.value == 1:
+            self.A.transfer_from(self.IN1)
+
+        elif self.TMP.value == 2:
+            self.A.transfer_from(self.IN2)
+            
+        else:
+            raise ValueError(f"Invalid Input Port: {self.TMP.value}")
+
+        self.clock.update(10)
     
     
     def INRA(self):
@@ -271,6 +286,50 @@ class CPU:
 
         self.update_flags()
         self.clock.pulse(4)
+
+
+    def JM(self):
+        if self.flags["sign"]:
+            self.fetch_address()
+
+            self.PC.value = self.MDR.value << 8 | self.TMP.value
+
+            self.clock.pulse(10)
+
+        else:
+            self.clock.pulse(7)
+
+
+    def JMP(self):
+        self.fetch_address()
+
+        self.PC.value = self.MDR.value << 8 | self.TMP.value
+
+        self.clock.pulse(10)
+
+
+    def JNZ(self):
+        if not self.flags["zero"]:
+            self.fetch_address()
+
+            self.PC.value = self.MDR.value << 8 | self.TMP.value
+
+            self.clock.pulse(10)
+
+        else:
+            self.clock.pulse(7)
+
+
+    def JZ(self):
+        if self.flags["zero"]:
+            self.fetch_address()
+
+            self.PC.value = self.MDR.value << 8 | self.TMP.value
+
+            self.clock.pulse(10)
+
+        else:
+            self.clock.pulse(7)
 
 
     def LDA(self):
@@ -367,6 +426,21 @@ class CPU:
 
         self.update_flags()
         self.clock.pulse(7)
+
+
+    def OUT(self):
+        self.fetch_byte()
+
+        if self.TMP.value == 3:
+            self.A.transfer_to(self.OUT3)
+
+        elif self.TMP.value == 4:
+            self.A.transfer_to(self.OUT4)
+
+        else:
+            raise ValueError(f"Invalid Output Port: {self.TMP.value}")
+
+        self.clock.update(10)
 
 
     def RAL(self):
