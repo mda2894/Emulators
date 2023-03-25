@@ -438,13 +438,14 @@ class CPU:
 
         if self.TMP.value == 3:
             self.A.transfer_to(self.OUT3)
-        print(f"{self.A.value:08b}")
 
         elif self.TMP.value == 4:
             self.A.transfer_to(self.OUT4)
 
         else:
             raise ValueError(f"Invalid Output Port: {self.TMP.value}")
+
+        print(f"{self.A.value:08b}")
 
         self.clock.pulse(10)
 
