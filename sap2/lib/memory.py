@@ -4,7 +4,8 @@ import os
 class Memory:
     def __init__(self, size, width = 8):
         self.size = size
-        self.width = width
+        self.bin_width = width
+        self.hex_width = math.ceil(self.bin_width // 4)
         self.max_value = 2 ** width - 1
 
         self.memory = [0] * size
@@ -78,16 +79,17 @@ class Memory:
             raise ValueError(f"Invalid dump range: {start_address} - {end_address}")
 
         for i in range(start_address, end_address + 1):
-            print(f"{i:0{len(str(self.size))}}: {self.memory[i]:0{self.width}b}")
+            print(f"{i:0{len(str(self.size))}}: {self.memory[i]:0{self.bin_width}b}")
 
 
     def hex_dump(self, start_address = 0, end_address = None):
         end_address = end_address or self.size - 1
+        address_hex_chars = len(str(hex(end_address - 1))) - 2
 
         if not 0 <= start_address <= end_address < self.size:
             raise ValueError(f"Invalid dump range: {start_address} - {end_address}")
 
         for i in range(start_address, end_address, 16):
             row = self.memory[i:i+16]
-            row_hex = ' '.join(f"{x:0{math.ceil(self.width // 4)}x}" for x in row)
-            print(f"{i:0{len(str(self.size))}}: {row_hex.ljust(48)}")
+            row_hex = ' '.join(f"{x:0{self.hex_width}x}" for x in row)
+            print(f"{i:0{address_hex_chars}x}: {row_hex.ljust(48)}")
