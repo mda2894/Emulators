@@ -43,27 +43,23 @@ class Memory:
             file_ext = os.path.splitext(program)[1]
             
             if file_ext == '.hex':
+                length = 2
                 base = 16
             elif file_ext == '.bin':
+                length = 8
                 base = 2
             else:
-                base = 0
+                raise TypeError("Wrong file type: file must have extension .bin (for binary) or .hex (for hexadecimal)")
 
             with open(program, 'r') as f:
-                if (line := f.readline().strip()):
-                    if base == 0:
-                        if len(line) == self.width:
-                            base = 2
-                        else:
-                            base = 16
-
+                if (line := f.readline()[0:length]):
                     self.memory[start_address] = int(line, base)
 
                 else:
                     raise ValueError("File is empty")
 
                 index = start_address + 1
-                while (line := f.readline().strip()):
+                while (line := f.readline()[0:length]):
                     if index >= self.size:
                         raise IndexError("Program too large")
 
@@ -94,5 +90,4 @@ class Memory:
         for i in range(start_address, end_address, 16):
             row = self.memory[i:i+16]
             row_hex = ' '.join(f"{x:0{math.ceil(self.width // 4)}x}" for x in row)
-            row_ascii = ''.join(chr(x) if 32 <= x <= 126 else '.' for x in row)
-            print(f"{i:0{len(str(self.size))}}: {row_hex.ljust(48)}  {row_ascii}")
+            print(f"{i:0{len(str(self.size))}}: {row_hex.ljust(48)}")

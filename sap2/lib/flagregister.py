@@ -32,5 +32,5 @@ class FlagRegister:
 
 
     def dump(self):
-        for flag, value in self.register:
+        for flag, value in self.register.items():
             print(f"{flag}: {value}")

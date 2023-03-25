@@ -110,20 +110,23 @@ class CPU:
 
     
     def run(self):
-        self.clock.reset()
-
         while not self.flags["halt"]:
             self.fetch_instruction()
             self.execute_instruction()
+            self.display_state(0, 15)
 
 
     def fetch_instruction(self):
-        self.IR.load(self.memory, self.PC.value)
+        self.PC.transfer_to(self.MAR)
+        self.MDR.load(self.memory, self.MAR.value)
+        self.MDR.transfer_to(self.IR)
         self.PC.inc()
 
 
     def fetch_byte(self):
-        self.TMP.load(self.memory, self.PC.value) # load byte into TMP
+        self.PC.transfer_to(self.MAR)
+        self.MDR.load(self.memory, self.MAR.value)
+        self.MDR.transfer_to(self.TMP)
         self.PC.inc()
 
 
@@ -134,9 +137,11 @@ class CPU:
         self.MDR.load(self.memory, self.PC.value) # load upper byte of address into MDR
         self.PC.inc()
 
+
     def execute_instruction(self):
         try:
             self.instruction_table[self.IR.value]()
+
         except KeyError as exc:
             raise ValueError(f"Invalid Opcode {self.IR.value:02x} at Memory Address {self.MAR.value:04x}") from exc
 
@@ -162,10 +167,10 @@ class CPU:
 
         print('\nRegisters')
         for register in self.registers:
-            register.bin_dump()
+            register.hex_dump()
 
         print("\nMemory")
-        self.memory.bin_dump(start_address, end_address)
+        self.memory.hex_dump(start_address, end_address)
 
 
     '''instruction execution methods'''
@@ -186,14 +191,14 @@ class CPU:
 
     
     def ANAB(self):
-        self.A.and_reg(B)
+        self.A.and_reg(self.B)
 
         self.update_flags()
         self.clock.pulse(4)
 
 
     def ANAC(self):
-        self.A.and_reg(C)
+        self.A.and_reg(self.C)
 
         self.update_flags()
         self.clock.pulse(4)
@@ -433,6 +438,7 @@ class CPU:
 
         if self.TMP.value == 3:
             self.A.transfer_to(self.OUT3)
+        print(f"{self.A.value:08b}")
 
         elif self.TMP.value == 4:
             self.A.transfer_to(self.OUT4)
@@ -440,7 +446,7 @@ class CPU:
         else:
             raise ValueError(f"Invalid Output Port: {self.TMP.value}")
 
-        self.clock.update(10)
+        self.clock.pulse(10)
 
 
     def RAL(self):
