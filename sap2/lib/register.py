@@ -34,7 +34,7 @@ class Register:
 
 
     def hex_dump(self):
-        print(f'{self.name.ljust(4)} {self.value:0{math.ceil(self.width // 4)}x}')
+        print(f'{self.name.ljust(3)} {self.value:0{math.ceil(self.width // 4)}x}')
 
 
     '''transferring data between registers and memory'''

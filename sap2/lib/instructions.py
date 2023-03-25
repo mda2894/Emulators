@@ -84,18 +84,9 @@ def HLT(cpu):
 
 
 def IN(cpu):
-    cpu.fetch_byte()
+    cpu.A.transfer_from(cpu.IN)
 
-    if cpu.TMP.value == 1:
-        cpu.A.transfer_from(cpu.IN1)
-
-    elif cpu.TMP.value == 2:
-        cpu.A.transfer_from(cpu.IN2)
-            
-    else:
-        raise ValueError(f"Invalid Input Port: {cpu.TMP.value}")
-
-    cpu.clock.update(10)
+    cpu.clock.update(4)
     
     
 def INRA(cpu):
@@ -260,20 +251,11 @@ def ORI(cpu):
 
 
 def OUT(cpu):
-    cpu.fetch_byte()
+    cpu.A.transfer_to(cpu.OUT)
 
-    if cpu.TMP.value == 3:
-        cpu.A.transfer_to(cpu.OUT3)
+    print(f"{cpu.A.value:08b} {cpu.A.value:02x}")
 
-    elif cpu.TMP.value == 4:
-        cpu.A.transfer_to(cpu.OUT4)
-
-    else:
-        raise ValueError(f"Invalid Output Port: {cpu.TMP.value}")
-
-    print(f"{cpu.A.value:08b}")
-
-    cpu.clock.pulse(10)
+    cpu.clock.pulse(4)
 
 
 def RAL(cpu):

@@ -5,14 +5,12 @@ from lib.clock import Clock
 from lib.flagregister import FlagRegister
 from lib.instructions import *
 
-K = 1024
-
 class CPU:
     def __init__(self, clockspeed = 1_000_000):
         '''Initialize CPU hardware'''
         
         # Memory
-        self.memory = Memory(64*K)
+        self.memory = Memory(64*1024)
 
         # Clock
         self.clock = Clock(clockspeed)
@@ -33,11 +31,8 @@ class CPU:
         self.IR = self.registers.append(Register("IR")) or self.registers[-1] # instruction register
 
         # IO
-        self.IN1 = self.registers.append(Register("IN1")) or self.registers[-1] # input ports 1 & 2
-        self.IN2 = self.registers.append(Register("IN2")) or self.registers[-1]
-
-        self.OUT3 = self.registers.append(Register("OUT3")) or self.registers[-1] # output ports 3 & 4
-        self.OUT4 = self.registers.append(Register("OUT4")) or self.registers[-1]
+        self.IN = self.registers.append(Register("IN")) or self.registers[-1] # input port
+        self.OUT = self.registers.append(Register("OUT")) or self.registers[-1] # output port
 
         # Flag Register
         self.flags = FlagRegister(
@@ -50,8 +45,26 @@ class CPU:
     '''CPU operation methods'''
 
 
-    def program(self, program, start_address = 0):
-        self.memory.write(program, start_address)
+    def load(self, program, start = 0):
+        self.memory.write(program, start)
+
+
+    def program(self):
+        print('\nManual Program Mode \
+        \n\nPlease enter all inputs as hex bytes (00 - FF). Or type: \
+        \n    "view" to view the program you have entered \
+        \n    "restart" to restart your program from the beginning \
+        \n    "run" to run the program from start to finish \
+        \n    "step" to run the program step by step \
+        \n    "exit" to exit the program')
+
+        start = input("\nEnter starting address for your program (hex 0000 - FFFF): ")
+
+        lines = 0
+        current = start
+
+        while True:
+            break
 
 
     def reset(self):
@@ -63,10 +76,48 @@ class CPU:
         self.clock.reset()
 
     
-    def run(self):
+    def run(self, program = None, start = 0):
+        if program:
+            self.memory.write(program, start)
+
         while not self.flags["halt"]:
             self.fetch_instruction()
             self.execute_instruction()
+
+
+    def step(self, program = None, start = 0, end = 256):
+        if program:
+            self.memory.write(program, start)
+
+        self.display_state(start, end)
+
+        while True:
+            match input("\nEnter command: "): 
+                case "":
+                    if not self.flags["halt"]:
+                        self.fetch_instruction()
+                        self.execute_instruction()
+                        self.display_state(start, end)
+
+                    else:
+                        print('\nCPU is halted. Type "reset" to start over or "exit" to exit the program.')
+                
+                case "exit":
+                    break
+
+                case "reset":
+                    print("\nResetting computer")
+
+                    self.reset()
+                    self.step()
+                    break
+
+                case _:
+                    print('\nDid not recognize command. \
+                    \nType "reset" to start over, "exit" to exit the program, or just hit enter to execute the next instruction.')
+
+
+    '''Helper methods'''
 
 
     def fetch_instruction(self):
@@ -74,6 +125,14 @@ class CPU:
         self.MDR.load(self.memory, self.MAR.value)
         self.MDR.transfer_to(self.IR)
         self.PC.inc()
+
+
+    def execute_instruction(self):
+        try:
+            instruction_table[self.IR.value](self)
+
+        except KeyError as exc:
+            raise ValueError(f"Invalid Opcode {self.IR.value:02x} at Memory Address {self.MAR.value:04x}") from exc
 
 
     def fetch_byte(self):
@@ -91,14 +150,6 @@ class CPU:
         self.PC.inc()
 
 
-    def execute_instruction(self):
-        try:
-            instruction_table[self.IR.value](self)
-
-        except KeyError as exc:
-            raise ValueError(f"Invalid Opcode {self.IR.value:02x} at Memory Address {self.MAR.value:04x}") from exc
-
-
     def update_flags(self):
         if self.A.value == 0:
             self.flags.set("zero")
@@ -111,7 +162,7 @@ class CPU:
             self.flags.clear("sign")
 
 
-    def display_state(self, start_address = 0, end_address = None):
+    def display_state(self, start = 0, end = None):
         print('\nFlags')
         self.flags.dump()
 
@@ -120,33 +171,4 @@ class CPU:
             register.hex_dump()
 
         print("\nMemory")
-        self.memory.hex_dump(start_address, end_address)
-
-
-    def step(self, start = 0, end = 256):
-        self.display_state(start, end)
-
-        while True:
-            match input("\nEnter command: "): 
-                case "":
-                    if not self.flags["halt"]:
-                        self.fetch_instruction()
-                        self.execute_instruction()
-                        self.display_state(start, end)
-
-                    else:
-                        print('\nCPU is halted. Type "reset" to start over or "stop" to end the program.')
-                
-                case "stop":
-                    break
-
-                case "reset":
-                    print("\nResetting computer")
-
-                    self.reset()
-                    self.step()
-                    break
-
-                case _:
-                    print('\nDid not recognize command. \
-                    \nType "reset" to start over, "stop" to end the program, or just hit enter to execute the next instruction.')
+        self.memory.hex_dump(start, end)

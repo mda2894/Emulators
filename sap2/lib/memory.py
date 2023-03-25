@@ -27,6 +27,10 @@ class Memory:
         self.memory[address] = value
 
 
+    def clear(self):
+        self.memory = [0] * self.size
+
+
     def write(self, program, start_address = 0):
         if not 0 <= start_address < self.size:
             raise ValueError(f"Invalid Starting Address: {start_address}")
