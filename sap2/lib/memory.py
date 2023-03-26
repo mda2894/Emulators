@@ -8,27 +8,27 @@ class Memory:
         self.hex_width = math.ceil(self.bin_width // 4)
         self.max_value = 2 ** width - 1
 
-        self.memory = [0] * size
+        self.contents = [0] * size
     
 
     def __getitem__(self, address):
-        return self.memory[address]
+        return self.contents[address]
 
 
     def __setitem__(self, address, value):
-        self.memory[address] = value & self.max_value
+        self.contents[address] = value & self.max_value
 
 
     def peek(self, address):
-        return self.memory[address]
+        return self.contents[address]
 
 
     def poke(self, address, value):
-        self.memory[address] = value
+        self.contents[address] = value
 
 
     def clear(self):
-        self.memory = [0] * self.size
+        self.contents = [0] * self.size
 
 
     def write(self, program, start_address = 0):
@@ -42,7 +42,7 @@ class Memory:
                 raise IndexError(f"Program too large")
 
             for i in range(start_address, end_address + 1):
-                self.memory[i] = program[i]
+                self.contents[i] = program[i]
 
         elif os.path.isfile(program) and os.path.exists(program):
             file_ext = os.path.splitext(program)[1]
@@ -58,7 +58,7 @@ class Memory:
 
             with open(program, 'r') as f:
                 if (line := f.readline()[0:length]):
-                    self.memory[start_address] = int(line, base)
+                    self.contents[start_address] = int(line, base)
 
                 else:
                     raise ValueError("File is empty")
@@ -68,7 +68,7 @@ class Memory:
                     if index >= self.size:
                         raise IndexError("Program too large")
 
-                    self.memory[index] = int(line, base)
+                    self.contents[index] = int(line, base)
 
                     index += 1
         
@@ -96,7 +96,7 @@ class Memory:
         print()
 
         for i in range(first_value, last_value, 16):
-            line = self.memory[i:i+16]
+            line = self.contents[i:i+16]
 
             if line == prev_line:
                 consecutive_lines += 1
