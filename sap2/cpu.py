@@ -49,24 +49,6 @@ class CPU:
         self.memory.write(program, start)
 
 
-    def program(self):
-        print('\nManual Program Mode \
-        \n\nPlease enter all inputs as hex bytes (00 - FF). Or type: \
-        \n    "view" to view the program you have entered \
-        \n    "restart" to restart your program from the beginning \
-        \n    "run" to run the program from start to finish \
-        \n    "step" to run the program step by step \
-        \n    "exit" to exit the program')
-
-        start = input("\nEnter starting address for your program (hex 0000 - FFFF): ")
-
-        lines = 0
-        current = start
-
-        while True:
-            break
-
-
     def reset(self):
         self.flags.clear_all()
         
@@ -116,6 +98,84 @@ class CPU:
                     print('\nDid not recognize command. \
                     \nType "reset" to start over, "exit" to exit the program, or just hit enter to execute the next instruction.')
 
+    
+    def program_mode(self):
+        print('\nManual Program Mode \
+        \n\nPlease enter program as hex bytes (00 - FF). Type: \
+        \n    "view" to view the program you have entered \
+        \n    "restart" to restart your program from the beginning \
+        \n    "run" to run the program from start to finish \
+        \n    "step" to run the program step by step \
+        \n    "exit" to exit the program \
+        \n    "jump" to jump to a particular line and edit your program from there \
+        \n    "help" to repeat this message')
+
+        address = self.get_address_from_user()
+
+        current = address
+        min_address = address
+        max_address = address
+
+        while True:
+            match (cmd := input(f"\n{(current):04x}: ")):
+                case "view":
+                    print("\nMemory")
+                    self.memory.hex_dump()
+                
+                case "restart":
+                    self.memory.clear()
+
+                    address = self.get_address_from_user()
+
+                    current = address
+                    min_address = address
+                    max_address = address
+                
+                case "run":
+                    self.reset()
+                    self.run()
+                
+                case "step":
+                    self.reset()
+                    self.step()
+               
+                case "exit":
+                    break
+
+                case "help":
+                    print('\nPlease enter program as hex bytes (00 - FF). Type: \
+                    \n    "view" to view the program you have entered \
+                    \n    "restart" to clear memory and restart programming \
+                    \n    "run" to run the program from start to finish \
+                    \n    "step" to run the program step by step \
+                    \n    "exit" to exit the program \
+                    \n    "jump" to jump to a particular line and edit your program from there \
+                    \n    "help" to repeat this message')
+
+                case "jump":
+                    current = self.get_address_from_user()
+
+                case _:
+                    if current <= 0xFFFF:
+                        try:
+                            self.IN.value = int(cmd, base = 16)
+                            self.MAR.value = current
+                            self.IN.store(self.memory, current)
+
+                            if current > max_address:
+                                max_address = current
+
+                            elif current < min_address:
+                                min_address = current
+
+                            current += 1
+
+                        except:
+                            print('\nInvalid Input: type "help" for information on accepted inputs.')
+
+                    else:
+                        print("\nEnd of memory. Jump somewhere else in memory to continue programming.")
+   
 
     '''Helper methods'''
 
@@ -172,3 +232,20 @@ class CPU:
 
         print("\nMemory")
         self.memory.hex_dump(start, end)
+
+
+    def get_address_from_user(self):
+        address = -1
+        
+        while address < 0:
+            try:
+                address = int(input("\nEnter address (hex 0000 - FFFF): "), 16)
+            except:
+                print("\nInvalid memory address")
+                continue
+
+            if not (0x0000 <= address <= self.memory.size - 1):
+                address = -1
+                print("\nInvalid memory address")
+
+        return address

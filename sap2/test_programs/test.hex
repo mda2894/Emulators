@@ -7,6 +7,7 @@
 80 ; ADD B
 81 ; ADD C
 32 ; STA 0C
-0C
+0D
 00
+D3 ; OUT
 76 ; HLT

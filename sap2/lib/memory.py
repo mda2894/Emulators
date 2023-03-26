@@ -76,24 +76,42 @@ class Memory:
             raise ValueError("Invalid File")
 
 
-    def bin_dump(self, start_address = 0, end_address = None):
-        end_address = end_address or self.size - 1
+    def hex_dump(self, start_address = None, end_address = None):
+        if not (start_address or end_address):
+            first_value = 0
+            last_value = self.size - 1
+        
+        else:
+            start_address = start_address or 0
+            end_address = end_address or self.size - 1
 
-        if not 0 <= start_address <= end_address < self.size:
-            raise ValueError(f"Invalid dump range: {start_address} - {end_address}")
+            first_value = (start_address // 16) * 16
+            last_value = end_address + (15 - end_address % 16)
 
-        for i in range(start_address, end_address + 1):
-            print(f"{i:0{len(str(self.size))}}: {self.memory[i]:0{self.bin_width}b}")
+        address_hex_chars = len(str(hex(last_value))) - 2
 
+        prev_line = []
+        consecutive_lines = 0
 
-    def hex_dump(self, start_address = 0, end_address = None):
-        end_address = end_address or self.size - 1
-        address_hex_chars = len(str(hex(end_address - 1))) - 2
+        for i in range(first_value, last_value, 16):
+            line = self.memory[i:i+16]
 
-        if not 0 <= start_address <= end_address < self.size:
-            raise ValueError(f"Invalid dump range: {start_address} - {end_address}")
+            if line == prev_line:
+                consecutive_lines += 1
 
-        for i in range(start_address, end_address, 16):
-            row = self.memory[i:i+16]
-            row_hex = ' '.join(f"{x:0{self.hex_width}x}" for x in row)
-            print(f"{i:0{address_hex_chars}x}: {row_hex.ljust(48)}")
+                if consecutive_lines == 2:
+                    print('*')
+
+            else:
+                consecutive_lines = 0
+                prev_line = line
+
+                hex_values = [f'{byte:0{self.hex_width}x}' for byte in line]
+                
+                print(f'{i:0{address_hex_chars}x}: ' + ' '.join(hex_values))
+
+        if consecutive_lines > 0:
+            hex_values = [f'{byte:0{self.hex_width}x}' for byte in line]
+                
+            print(f'{i:0{address_hex_chars}x}: ' + ' '.join(hex_values))
+

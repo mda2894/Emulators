@@ -253,7 +253,7 @@ def ORI(cpu):
 def OUT(cpu):
     cpu.A.transfer_to(cpu.OUT)
 
-    print(f"{cpu.A.value:08b} {cpu.A.value:02x}")
+    print(f"\n{cpu.A.value:08b} {cpu.A.value:02x}")
 
     cpu.clock.pulse(4)
 
