@@ -93,6 +93,8 @@ class Memory:
         prev_line = []
         consecutive_lines = 0
 
+        print()
+
         for i in range(first_value, last_value, 16):
             line = self.memory[i:i+16]
 

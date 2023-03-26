@@ -96,61 +96,52 @@ class CPU:
 
                 case _:
                     print('\nDid not recognize command. \
-                    \nType "reset" to start over, "exit" to exit the program, or just hit enter to execute the next instruction.')
+                    \n  Type "reset" to start over, "exit" to exit the program, \
+                    \n  or hit enter to execute the next instruction.')
 
     
     def program_mode(self):
-        print('\nManual Program Mode \
-        \n\nPlease enter program as hex bytes (00 - FF). Type: \
-        \n    "view" to view the program you have entered \
-        \n    "restart" to restart your program from the beginning \
-        \n    "run" to run the program from start to finish \
-        \n    "step" to run the program step by step \
-        \n    "exit" to exit the program \
-        \n    "jump" to jump to a particular line and edit your program from there \
-        \n    "help" to repeat this message')
+        print('\nManual Program Mode')
+        self.display_program_help()
 
-        address = self.get_address_from_user()
-
-        current = address
-        min_address = address
-        max_address = address
+        current = self.get_address_from_user()
 
         while True:
             match (cmd := input(f"\n{(current):04x}: ")):
                 case "view":
-                    print("\nMemory")
                     self.memory.hex_dump()
+
+                case "cpu":
+                    self.display_state()
                 
                 case "restart":
                     self.memory.clear()
 
-                    address = self.get_address_from_user()
-
-                    current = address
-                    min_address = address
-                    max_address = address
+                    current = self.get_address_from_user()
                 
                 case "run":
                     self.reset()
-                    self.run()
+
+                    try:
+                        self.run()
+
+                    except:
+                        self.display_program_error()
                 
                 case "step":
                     self.reset()
-                    self.step()
+
+                    try:
+                        self.step()
+
+                    except:
+                        self.display_program_error()
                
                 case "exit":
                     break
 
                 case "help":
-                    print('\nPlease enter program as hex bytes (00 - FF). Type: \
-                    \n    "view" to view the program you have entered \
-                    \n    "restart" to clear memory and restart programming \
-                    \n    "run" to run the program from start to finish \
-                    \n    "step" to run the program step by step \
-                    \n    "exit" to exit the program \
-                    \n    "jump" to jump to a particular line and edit your program from there \
-                    \n    "help" to repeat this message')
+                    self.display_program_help()
 
                 case "jump":
                     current = self.get_address_from_user()
@@ -161,12 +152,6 @@ class CPU:
                             self.IN.value = int(cmd, base = 16)
                             self.MAR.value = current
                             self.IN.store(self.memory, current)
-
-                            if current > max_address:
-                                max_address = current
-
-                            elif current < min_address:
-                                min_address = current
 
                             current += 1
 
@@ -226,7 +211,7 @@ class CPU:
         print('\nFlags')
         self.flags.dump()
 
-        print('\nRegisters')
+        print('\nRegisters\n')
         for register in self.registers:
             register.hex_dump()
 
@@ -249,3 +234,20 @@ class CPU:
                 print("\nInvalid memory address")
 
         return address
+
+
+    def display_program_help(self):
+        print('\nPlease enter program as hex bytes (00 - FF). Type: \
+        \n  "view" to view the program you have entered \
+        \n  "cpu" to view the current state of your CPU \
+        \n  "restart" to restart your program from the beginning \
+        \n  "run" to run the program from start to finish \
+        \n  "step" to run the program step by step \
+        \n  "exit" to exit the program \
+        \n  "jump" to jump to a particular line and edit your program from there \
+        \n  "help" to repeat this message')
+
+
+    def display_program_error(self):
+        print('\nThere was an error while running your program. \
+        \n  Type "cpu" to view the state of your CPU when it failed.')

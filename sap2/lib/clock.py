@@ -23,7 +23,7 @@ class Clock:
             expected_time = cycles * self.cycle_time
             elapsed_time = time.perf_counter() - self.start_time
             
-            if expected_time - elapsed_time > 0:
+            if expected_time > elapsed_time:
                 time.sleep(expected_time - elapsed_time)
 
             self.start_time = time.perf_counter()
