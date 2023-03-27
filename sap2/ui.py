@@ -14,15 +14,13 @@ def program_mode(cpu):
             case "cpu":
                 display_state(cpu)
             
-            case "restart":
+            case "clear":
                 cpu.memory.clear()
 
                 display_program_help()
                 current = get_address_from_user()
             
             case "run":
-                cpu.reset()
-
                 try:
                     cpu.run()
 
@@ -33,16 +31,15 @@ def program_mode(cpu):
                     display_program_run_error()
             
             case "step":
+                step_mode(cpu)
+                
+                display_program_help()
+                current = get_address_from_user()
+
+            case "reset":
                 cpu.reset()
 
-                try:
-                    step_mode(cpu)
-                    
-                    display_program_help()
-                    current = get_address_from_user()
-
-                except:
-                    display_program_run_error()
+                print('\n CPU Reset')
             
             case "exit":
                 break
@@ -53,8 +50,8 @@ def program_mode(cpu):
             case "jump":
                 current = get_address_from_user()
 
-            case "export":
-                print("\nPlease input a file name to export your program to. \
+            case "save":
+                print("\nPlease input a file name to save your program to. \
                 \n  Include the extension (.hex for hex output or .bin for binary)")
 
                 valid_file = False
@@ -66,9 +63,30 @@ def program_mode(cpu):
                         try:
                             export_memory(cpu, file)
                             valid_file = True
-                            print("\nProgram succesfully exported")
+                            print("\nProgram successfully exported")
                         except:
-                            display_program_export_error()
+                            display_program_save_error()
+
+                    else:
+                        print("\nInvalid file extension. \
+                        \n  Only .hex or .bin files are allowed.")
+
+            case "load":
+                print("\nPlease input a file name to load into memory. \
+                \n  Include the extension (.hex for hex output or .bin for binary)")
+
+                valid_file = False
+
+                while not valid_file:
+                    file = input("\nFile name: ")
+
+                    if file[-4:] in [".hex", ".bin"]:
+                        try:
+                            cpu.load(file)
+                            valid_file = True
+                            print("\nProgram successfully exported")
+                        except:
+                            display_program_load_error()
 
                     else:
                         print("\nInvalid file extension. \
@@ -92,7 +110,7 @@ def step_mode(cpu, program = None):
     '''CPU step-by-step operation mode'''
     if program:
         try:
-            cpu.memory.write(program, start)
+            cpu.load(program)
         except:
             print
 
@@ -101,8 +119,11 @@ def step_mode(cpu, program = None):
     while True:
         match input("\nEnter command: "): 
             case "":
-                step(cpu)
-            
+                try:
+                    step(cpu)
+                except:
+                    display_step_error()
+
             case "exit":
                 break
 
@@ -175,13 +196,16 @@ def get_address_from_user():
 def display_program_help():
     print('\nManual Program Mode \
     \n\nPlease enter program as hex bytes (00 - FF). Type: \
-    \n  "view" to view the program you have entered \
-    \n  "cpu" to view the current state of your CPU \
-    \n  "restart" to restart your program from the beginning \
-    \n  "run" to run the program from start to finish \
-    \n  "step" to run the program step by step \
-    \n  "exit" to exit the program \
+    \n  "view" to view the current memory contents \
     \n  "jump" to jump to a particular line and edit your program from there \
+    \n  "clear" to clear the memory and start over \
+    \n  "save" to save your program to a file \
+    \n  "load" to load a program from a file into memory \
+    \n  "run" to run the program from start to finish \
+    \n  "reset" to reset the CPU (without clearing memory) \
+    \n  "step" to run the program step by step \
+    \n  "cpu" to display the current state of your CPU \
+    \n  "exit" to exit the program \
     \n  "help" to repeat this message')
 
 
@@ -198,12 +222,16 @@ def display_program_run_error():
     \n  Type "cpu" to view the state of your CPU when it failed.')
 
 
+def display_step_error():
+    print('\nThere was an error while executing the next instruction.')
+
+
 def display_program_load_error():
     print('\nThere was an error while loading your program.')
 
 
-def display_program_export_error():
-    print('\nThere was an error while exporting your program.')
+def display_program_save_error():
+    print('\nThere was an error while saving your program.')
 
 
 def display_invalid_input_error():
