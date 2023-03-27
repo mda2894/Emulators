@@ -1,0 +1,11 @@
+Improvements:
+
+- Import/Export program function
+	- improve hex file formatting? (would require changing import methods as well)
+
+- Better error handling within program mode
+
+- Assembler
+	- maybe start with SAP-1 and work up?
+	
+- BASIC interpreter/compiler? (long-term goal)

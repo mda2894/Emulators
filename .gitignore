@@ -6,4 +6,3 @@
 __pycache__/
 *.pyperf
 SAP1/env/
-*.txt

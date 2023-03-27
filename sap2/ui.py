@@ -33,8 +33,9 @@ def program_mode(cpu):
                     display_program_help()
                     current = get_address_from_user()
 
-                except:
+                except Exception as exc:
                     display_program_run_error()
+                    print(exc)
             
             case "step":
                 cpu.reset()
@@ -67,18 +68,24 @@ def program_mode(cpu):
 
                 while not valid_file:
                     file = input("\nFile name: ")
+                    
+                    if file == "exit":
+                        print("\nFailed to save file")
+                        break
 
                     if file[-4:] in [".hex", ".bin"]:
                         try:
-                            save_program(cpu, file)
+                            save_program(file, program)
                             valid_file = True
                             print("\nProgram successfully saved")
-                        except:
+                        except Exception as exc:
                             display_program_save_error()
+                            print(exc)
 
                     else:
                         print("\nInvalid file extension. \
                         \n  Only .hex or .bin files are allowed.")
+
 
             case "load":
                 print("\nPlease input a file name to load into memory. \
@@ -89,21 +96,34 @@ def program_mode(cpu):
                 while not valid_file:
                     file = input("\nFile name: ")
 
+                    if file == "exit":
+                        print("\nFailed to load file")
+                        break
+
                     if file[-4:] in [".hex", ".bin"]:
                         try:
-                            load_program(file)
+                            load_program(file, program)
                             valid_file = True
                             print("\nProgram successfully loaded")
-                        except:
+                        except Exception as exc:
                             display_program_load_error()
+                            print(exc)
 
                     else:
                         print("\nInvalid file extension. \
                         \n  Only .hex or .bin files are allowed.")
 
+
             case _:
-                if not (0 <= cmd <= 0xFF):
+                try:
+                    cmd = int(cmd, 16)
+                except Exception as exc:
                     display_invalid_input_error()
+                    print(exc)
+                    continue
+
+                if not (0 <= cmd <= 0xFF):
+                    print('\nInput was not a valid hex byte')
 
                 elif 0 <= current <= 0xFFFF:
                     program[current] = cmd
@@ -118,13 +138,17 @@ def step_mode(cpu):
 
     display_step_help()
 
+    input("\nPress enter to begin: ")
+    display_state(cpu)
+
     while True:
         match input("\nEnter command: "): 
             case "":
                 try:
                     step(cpu)
-                except:
+                except Exception as exc:
                     display_step_error()
+                    print(exc)
 
             case "exit":
                 break
@@ -240,8 +264,9 @@ def get_address_from_user():
     while address < 0:
         try:
             address = int(input("\nEnter address (hex 0000 - FFFF): "), 16)
-        except:
+        except Exception as exc:
             print("\nInvalid memory address")
+            print(exc)
             continue
 
         if not (0x0000 <= address <= 0xFFFF):

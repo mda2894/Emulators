@@ -116,4 +116,3 @@ class Memory:
             hex_values = [f'{byte:0{self.hex_width}x}' for byte in line]
                 
             print(f'{i:0{address_hex_chars}x}: ' + ' '.join(hex_values))
-
