@@ -67,129 +67,6 @@ class CPU:
             self.execute_instruction()
 
 
-    def step(self, program = None, start = 0, end = 256):
-        if program:
-            self.memory.write(program, start)
-
-        self.display_step_help()
-
-        while True:
-            match input("\nEnter command: "): 
-                case "":
-                    if not self.flags["halt"]:
-                        self.fetch_instruction()
-                        self.execute_instruction()
-                        self.display_state(start, end)
-
-                    else:
-                        print('\nCPU is halted. Type "reset" to start over or "exit" to exit the program.')
-                
-                case "exit":
-                    break
-
-                case "reset":
-                    print("\nResetting computer")
-
-                    self.reset()
-                    self.step()
-                    break
-
-                case "help":
-                    self.display_step_help()
-
-                case _:
-                    print('\nDid not recognize command: type "help" for information on accepted commands.')
-
-    
-    def program_mode(self):
-        self.display_program_help()
-        current = self.get_address_from_user()
-
-        while True:
-            match (cmd := input(f"\n{(current):04x}: ")):
-                case "view":
-                    self.memory.hex_dump()
-
-                case "cpu":
-                    self.display_state()
-                
-                case "restart":
-                    self.memory.clear()
-
-                    self.display_program_help()
-                    current = self.get_address_from_user()
-                
-                case "run":
-                    self.reset()
-
-                    try:
-                        self.run()
-
-                        self.display_program_help()
-                        current = self.get_address_from_user()
-
-                    except:
-                        self.display_program_error()
-                
-                case "step":
-                    self.reset()
-
-                    try:
-                        self.step()
-                        
-                        self.display_program_help()
-                        current = self.get_address_from_user()
-
-                    except:
-                        self.display_program_error()
-               
-                case "exit":
-                    break
-
-                case "help":
-                    self.display_program_help()
-
-                case "jump":
-                    current = self.get_address_from_user()
-
-                case "export":
-                    print("\nPlease input a file name to export your program to. \
-                    \n  Include the extension (.hex for hex output or .bin for binary)")
-
-                    valid_file = False
-
-                    while not valid_file:
-                        file = input("\nFile name: ")
-
-                        if file[-4:] in [".hex", ".bin"]:
-                            try:
-                                self.export_memory(file)
-                                valid_file = True
-                                print("\nProgram succesfully exported")
-                            except:
-                                print("\nThere was an error while exporting your program. \
-                                \n  Maybe try a different file name.")
-
-                        else:
-                            print("\nInvalid file extension. \
-                            \n  Only .hex or .bin files are allowed.")
-
-                case _:
-                    if current <= 0xFFFF:
-                        try:
-                            self.IN.value = int(cmd, base = 16)
-                            self.MAR.value = current
-                            self.IN.store(self.memory, current)
-
-                            current += 1
-
-                        except:
-                            print('\nDid not recognize command: type "help" for information on accepted commands.')
-
-                    else:
-                        print("\nEnd of memory. Jump somewhere else in memory to continue programming.")
-   
-
     '''Helper methods'''
 
 
@@ -223,6 +100,12 @@ class CPU:
         self.PC.inc()
 
 
+    def store_hex_input(self, val, address):
+        self.IN.value = int(val, base = 16)
+        self.MAR.value = address
+        self.IN.store(self.memory, address)
+
+
     def update_flags(self):
         if self.A.value == 0:
             self.flags.set("zero")
@@ -233,67 +116,3 @@ class CPU:
             self.flags.set("sign")
         else:
             self.flags.clear("sign")
-
-
-    def display_state(self, start = 0, end = None):
-        print('\nFlags')
-        self.flags.dump()
-
-        print('\nRegisters\n')
-        for register in self.registers:
-            register.hex_dump()
-
-        print("\nMemory")
-        self.memory.hex_dump(start, end)
-
-
-    def get_address_from_user(self):
-        address = -1
-        
-        while address < 0:
-            try:
-                address = int(input("\nEnter address (hex 0000 - FFFF): "), 16)
-            except:
-                print("\nInvalid memory address")
-                continue
-
-            if not (0x0000 <= address <= self.memory.size - 1):
-                address = -1
-                print("\nInvalid memory address")
-
-        return address
-
-
-    def display_program_help(self):
-        print('\nManual Program Mode \
-        \n\nPlease enter program as hex bytes (00 - FF). Type: \
-        \n  "view" to view the program you have entered \
-        \n  "cpu" to view the current state of your CPU \
-        \n  "restart" to restart your program from the beginning \
-        \n  "run" to run the program from start to finish \
-        \n  "step" to run the program step by step \
-        \n  "exit" to exit the program \
-        \n  "jump" to jump to a particular line and edit your program from there \
-        \n  "help" to repeat this message')
-
-
-    def display_program_error(self):
-        print('\nThere was an error while running your program. \
-        \n  Type "cpu" to view the state of your CPU when it failed.')
-
-    def display_step_help(self):
-        print('\nStep-by-Step Operation Mode \
-        \n\nHit enter to execute the next instruction. Or type: \
-        \n  "reset" to reset the CPU \
-        \n  "exit" to exit step mode \
-        \n  "help" to repeat this message')
-
-
-    def export_memory(self, file):
-        with open(file, 'w') as f:
-            if file[-4:] == ".hex":
-                for byte in self.memory.contents:
-                    f.write(f"{byte:02x}\n")
-            elif file[-4:] == ".bin":
-                for byte in self.memory.contents:
-                    f.write(f"{byte:08b}\n")
