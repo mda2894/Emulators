@@ -88,7 +88,7 @@ class Memory:
             first_value = (start_address // 16) * 16
             last_value = end_address + (15 - end_address % 16)
 
-        address_hex_chars = len(str(hex(last_value))) - 2
+        address_hex_chars = len(str(hex(last_value)[2:]))
 
         prev_line = []
         consecutive_lines = 0

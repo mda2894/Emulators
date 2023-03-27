@@ -1,27 +1,33 @@
 '''Module for handling the "terminal" interface and user input'''
-
+import os
 
 def program_mode(cpu):
     '''Main terminal interface mode'''
+
     display_program_help()
+
+    program = [0] * cpu.memory.size
     current = get_address_from_user()
+
 
     while True:
         match (cmd := input(f"\n{(current):04x}: ")):
             case "view":
-                cpu.memory.hex_dump()
+                program_hex_dump(program)
 
             case "cpu":
                 display_state(cpu)
             
             case "clear":
-                cpu.memory.clear()
+                program = [0] * cpu.memory.size
 
                 display_program_help()
                 current = get_address_from_user()
             
             case "run":
                 try:
+                    cpu.reset()
+                    cpu.load(program)
                     cpu.run()
 
                     display_program_help()
@@ -31,6 +37,8 @@ def program_mode(cpu):
                     display_program_run_error()
             
             case "step":
+                cpu.reset()
+                cpu.load(program)
                 step_mode(cpu)
                 
                 display_program_help()
@@ -38,8 +46,9 @@ def program_mode(cpu):
 
             case "reset":
                 cpu.reset()
+                cpu.memory.clear()
 
-                print('\n CPU Reset')
+                print('\nCPU Reset')
             
             case "exit":
                 break
@@ -61,9 +70,9 @@ def program_mode(cpu):
 
                     if file[-4:] in [".hex", ".bin"]:
                         try:
-                            export_memory(cpu, file)
+                            save_program(cpu, file)
                             valid_file = True
-                            print("\nProgram successfully exported")
+                            print("\nProgram successfully saved")
                         except:
                             display_program_save_error()
 
@@ -82,9 +91,9 @@ def program_mode(cpu):
 
                     if file[-4:] in [".hex", ".bin"]:
                         try:
-                            cpu.load(file)
+                            load_program(file)
                             valid_file = True
-                            print("\nProgram successfully exported")
+                            print("\nProgram successfully loaded")
                         except:
                             display_program_load_error()
 
@@ -93,26 +102,19 @@ def program_mode(cpu):
                         \n  Only .hex or .bin files are allowed.")
 
             case _:
-                if current <= 0xFFFF:
-                    try:
-                        cpu.store_hex_input(cmd, address)
+                if not (0 <= cmd <= 0xFF):
+                    display_invalid_input_error()
 
-                        current += 1
-
-                    except:
-                        display_invalid_input_error()
+                elif 0 <= current <= 0xFFFF:
+                    program[current] = cmd
+                    current += 1
 
                 else:
-                    print("\nEnd of memory. Jump somewhere else in memory to continue programming.")
+                    print("\nInvalid memory location. Jump somewhere else to continue programming.")
 
 
-def step_mode(cpu, program = None):
+def step_mode(cpu):
     '''CPU step-by-step operation mode'''
-    if program:
-        try:
-            cpu.load(program)
-        except:
-            print
 
     display_step_help()
 
@@ -163,14 +165,70 @@ def display_state(cpu, start = 0, end = None):
     cpu.memory.hex_dump(start, end)
 
 
-def export_memory(cpu, file):
+def save_program(file, program):
     with open(file, 'w') as f:
-        if file[-4:] == ".hex":
-            for byte in cpu.memory.contents:
+        file_ext = os.path.splitext(file)[1]
+        if file_ext == ".hex":
+            for byte in program:
                 f.write(f"{byte:02x}\n")
-        elif file[-4:] == ".bin":
-            for byte in cpu.memory.contents:
+        elif file_ext == ".bin":
+            for byte in program:
                 f.write(f"{byte:08b}\n")
+
+
+def load_program(file, program):
+    if os.path.isfile(file) and os.path.exists(file):
+        file_ext = os.path.splitext(file)[1]
+        
+        if file_ext == '.hex':
+            length = 2
+            base = 16
+        elif file_ext == '.bin':
+            length = 8
+            base = 2
+
+        with open(file, 'r') as f:
+            index = 0
+
+            while (line := f.readline()[0:length]):
+                if index >= 0xFFFF:
+                    raise IndexError("Program too large")
+
+                program[index] = int(line, base)
+
+                index += 1
+
+    else:
+        raise ValueError("Invalid File")
+
+
+def program_hex_dump(program):
+        prev_line = []
+        consecutive_lines = 0
+
+        print()
+
+        for i in range(0, 0xFFFF, 16):
+            line = program[i:i+16]
+
+            if line == prev_line:
+                consecutive_lines += 1
+
+                if consecutive_lines == 2:
+                    print('*')
+
+            else:
+                consecutive_lines = 0
+                prev_line = line
+
+                hex_values = [f'{byte:02x}' for byte in line]
+                
+                print(f'{i:04x}: ' + ' '.join(hex_values))
+
+        if consecutive_lines > 0:
+            hex_values = [f'{byte:02x}' for byte in line]
+                
+            print(f'{i:04x}: ' + ' '.join(hex_values))
 
 
 '''General UI functions - don't need access to CPU object'''
@@ -196,34 +254,22 @@ def get_address_from_user():
 def display_program_help():
     print('\nManual Program Mode \
     \n\nPlease enter program as hex bytes (00 - FF). Type: \
-    \n  "view" to view the current memory contents \
+    \n  "view" to view your program \
     \n  "jump" to jump to a particular line and edit your program from there \
-    \n  "clear" to clear the memory and start over \
+    \n  "clear" to clear your current program and restart program mode \
     \n  "save" to save your program to a file \
-    \n  "load" to load a program from a file into memory \
-    \n  "run" to run the program from start to finish \
-    \n  "reset" to reset the CPU (without clearing memory) \
-    \n  "step" to run the program step by step \
-    \n  "cpu" to display the current state of your CPU \
-    \n  "exit" to exit the program \
-    \n  "help" to repeat this message')
-
-
-def display_step_help():
-    print('\nStep-by-Step Operation Mode \
-    \n\nHit enter to execute the next instruction. Or type: \
-    \n  "reset" to reset the CPU \
-    \n  "exit" to exit step mode \
+    \n  "load" to load a program from a file \
+    \n  "step" to load the program into memory and run it step by step \
+    \n  "run" to load the program into memory and run it from start to finish \
+    \n  "cpu" to display the current state of the CPU (flags, registers, & memory) \
+    \n  "reset" to reset the CPU (clear all flags, registers, and memory) \
+    \n  "exit" to exit program mode \
     \n  "help" to repeat this message')
 
 
 def display_program_run_error():
     print('\nThere was an error while running your program. \
     \n  Type "cpu" to view the state of your CPU when it failed.')
-
-
-def display_step_error():
-    print('\nThere was an error while executing the next instruction.')
 
 
 def display_program_load_error():
@@ -234,5 +280,17 @@ def display_program_save_error():
     print('\nThere was an error while saving your program.')
 
 
+def display_step_help():
+    print('\nStep-by-Step Operation Mode \
+    \n\nHit enter to execute the next instruction. Or type: \
+    \n  "reset" to reset the CPU \
+    \n  "exit" to exit step mode \
+    \n  "help" to repeat this message')
+
+
+def display_step_error():
+    print('\nThere was an error while executing the next instruction.')
+
+
 def display_invalid_input_error():
-    print('\nDid not recognize command: type "help" for information on accepted commands.')
+    print('\nInvalid input: type "help" for information on accepted commands.')

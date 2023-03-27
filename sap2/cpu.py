@@ -58,10 +58,7 @@ class CPU:
         self.clock.reset()
 
     
-    def run(self, program = None, start = 0):
-        if program:
-            self.memory.write(program, start)
-
+    def run(self):
         while not self.flags["halt"]:
             self.fetch_instruction()
             self.execute_instruction()
@@ -98,12 +95,6 @@ class CPU:
         
         self.MDR.load(self.memory, self.PC.value) # load upper byte of address into MDR
         self.PC.inc()
-
-
-    def store_hex_input(self, val, address):
-        self.IN.value = int(val, base = 16)
-        self.MAR.value = address
-        self.IN.store(self.memory, address)
 
 
     def update_flags(self):
