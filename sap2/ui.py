@@ -1,8 +1,8 @@
-'''functions for handling the "terminal" interface and user input'''
+'''Module for handling the "terminal" interface and user input'''
 
 
 def program_mode(cpu):
-    '''main terminal interface mode'''
+    '''Main terminal interface mode'''
     display_program_help()
     current = get_address_from_user()
 
@@ -89,7 +89,7 @@ def program_mode(cpu):
 
 
 def step_mode(cpu, program = None):
-    '''cpu step-by-step operation mode'''
+    '''CPU step-by-step operation mode'''
     if program:
         try:
             cpu.memory.write(program, start)
@@ -152,7 +152,7 @@ def export_memory(cpu, file):
                 f.write(f"{byte:08b}\n")
 
 
-'''general UI functions - don't need access to CPU object'''
+'''General UI functions - don't need access to CPU object'''
 
 
 def get_address_from_user():

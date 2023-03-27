@@ -9,7 +9,7 @@ class Register:
         self.value = 0
 
 
-    '''getting, setting, and clearing register value'''
+    '''Getting, setting, and clearing register value'''
 
 
     @property
@@ -26,7 +26,7 @@ class Register:
         self.value = 0
 
 
-    '''displaying register contents'''
+    '''Displaying register contents'''
 
 
     def bin_dump(self):
@@ -37,7 +37,7 @@ class Register:
         print(f'{self.name.ljust(3)} {self.value:0{math.ceil(self.width // 4)}x}')
 
 
-    '''transferring data between registers and memory'''
+    '''Transferring data between registers and memory'''
 
 
     def transfer_to(self, other):
@@ -56,7 +56,7 @@ class Register:
         self.value = memory[address]
 
 
-    '''mathematical and logical operations'''
+    '''Mathematical and logical operations'''
 
 
     def msb(self, bits = 1):
