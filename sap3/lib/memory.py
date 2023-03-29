@@ -5,7 +5,7 @@ class Memory:
     def __init__(self, size, width = 8):
         self.size = size
         self.width = width
-        self.hex_width = math.ceil(self.bin_width // 4)
+        self.hex_width = math.ceil(self.width // 4)
         self.max_value = 2 ** width - 1
 
         self.contents = [0] * size
