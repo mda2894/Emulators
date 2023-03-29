@@ -2,18 +2,35 @@
 
 # instruction methods
 
-def ADDB(cpu):
-    cpu.A.add(cpu.B)
+def ADD(cpu, register):
+    cpu.A.add(register)
 
     cpu.update_flags()
     cpu.clock.pulse(4)
 
+def ADDA(cpu):
+    ADD(cpu, cpu.A)
+
+def ADDB(cpu):
+    ADD(cpu, cpu.B)
 
 def ADDC(cpu):
-    cpu.A.add(cpu.C)
+    ADD(cpu, cpu.C)
 
-    cpu.update_flags()
-    cpu.clock.pulse(4)
+def ADDD(cpu):
+    ADD(cpu, cpu.D)
+
+def ADDE(cpu):
+    ADD(cpu, cpu.E)
+
+def ADDH(cpu):
+    ADD(cpu, cpu.H)
+
+def ADDL(cpu):
+    ADD(cpu, cpu.L)
+
+def ADDM(cpu):
+    ADD(cpu, cpu.M)
 
     
 def ANAB(cpu):

@@ -117,3 +117,51 @@ class Register:
 
     def rol(self, rot_bits = 1):
         self.value = (self.value << (rot_bits % self.width)) | (self.value >> (self.width - (rot_bits % self.width)))
+
+
+
+class DoubleRegister(Register):
+    def __init__(self, name, upper_register, lower_register):
+        self.name = name
+        self.upper_register = upper_register
+        self.lower_register = lower_register
+
+        self.upper_width = self.upper_register.width
+        self.lower_width = self.lower_register.width
+        self.width = self.upper_width + self.lower_width
+
+        self.max_value = 2 ** self.width - 1
+
+        self.value = 0
+
+
+    @property
+    def value(self):
+        return (self.upper_register.value << self.lower_width) | self.lower_register.value
+
+
+    @value.setter
+    def value(self, new_value):
+        self.lower_register.value = new_value & self.lower_register.max_value
+        self.upper_register.value = new_value >> self.lower_width
+
+
+
+class PseudoRegister(Register):
+    def __init__(self, name, memory, pointer_register):
+        self.name = name
+        self.memory = memory
+        self.pointer_register = pointer_register
+
+        self.width = self.memory.width
+        self.max_value = 2 ** self.width - 1
+
+    
+    @property
+    def value(self):
+        return self.memory[self.pointer_register.value]
+
+
+    @value.setter
+    def value(self, new_value):
+        self.memory[self.pointer_register.value] = new_value

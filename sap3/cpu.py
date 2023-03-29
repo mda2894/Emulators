@@ -10,7 +10,7 @@ class CPU:
         '''Initialize CPU hardware'''
         
         # Memory
-        self.memory = Memory(64*1024)
+        self.memory = Memory(0xFFFF)
 
         # Clock
         self.clock = Clock(clockspeed)
@@ -90,10 +90,13 @@ class CPU:
 
 
     def fetch_address(self):
-        self.TMP.load(self.memory, self.PC.value) # load lower byte of address into TMP
+        self.PC.transfer_to(self.MAR)
+        self.MDR.load(self.memory, self.MAR.value)
+        self.MDR.transfer_to(self.TMP) # load lower byte of address into TMP
         self.PC.inc()
         
-        self.MDR.load(self.memory, self.PC.value) # load upper byte of address into MDR
+        self.PC.transfer_to(self.MAR)
+        self.MDR.load(self.memory, self.MAR.value) # load upper byte of address into MDR
         self.PC.inc()
 
 
