@@ -168,7 +168,7 @@ def step_mode(cpu):
 
 
 def step(cpu):
-    if not cpu.flags["halt"]:
+    if not cpu.halt:
         cpu.fetch_instruction()
         cpu.execute_instruction()
         display_state(cpu)
@@ -179,7 +179,7 @@ def step(cpu):
 
 def display_state(cpu, start = 0, end = None):
     print('\nFlags')
-    cpu.flags.dump()
+    cpu.F.dump()
 
     print('\nRegisters\n')
     for register in cpu.registers:

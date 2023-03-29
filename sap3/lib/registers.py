@@ -178,7 +178,8 @@ class FlagsRegister(Register):
     then all bits in the register without an associated flag will remain 0
     '''
 
-    def __init__(self, *, width = 8, **flag_index):
+    def __init__(self, name, width = 8, **flag_index):
+        self.name = name
         self.width = width
         self.flags = dict.fromkeys(flag_index.keys(), False)
         self.index = flag_index
@@ -209,11 +210,11 @@ class FlagsRegister(Register):
 
 
     def set_flag(self, flag):
-        self.flags[flag] = True
+        self.flags[flag] = 1
     
 
     def clear_flag(self, flag):
-        self.flags[flag] = False
+        self.flags[flag] = 0
 
 
     def toggle_flag(self, flag):
@@ -223,4 +224,4 @@ class FlagsRegister(Register):
     def dump(self):
         print()
         for flag, value in self.flags.items():
-            print(f"{flag}: {value}")
+            print(f"{flag.ljust(6)} {value:01d}")
