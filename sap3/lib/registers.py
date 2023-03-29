@@ -1,6 +1,10 @@
+'''Module for different type of Register classes'''
+
 import math
 
 class Register:
+    '''Standard Register'''
+
     def __init__(self, name, width = 8):
         self.name = name
         self.width = width
@@ -8,9 +12,7 @@ class Register:
 
         self.value = 0
 
-
     '''Getting, setting, and clearing register value'''
-
 
     @property
     def value(self):
@@ -25,9 +27,7 @@ class Register:
     def clear(self):
         self.value = 0
 
-
     '''Displaying register contents'''
-
 
     def bin_dump(self):
         print(f'{self.name} Register: {self.value:0{self.width}b}')
@@ -36,9 +36,7 @@ class Register:
     def hex_dump(self):
         print(f'{self.name.ljust(3)} {self.value:0{math.ceil(self.width // 4)}x}')
 
-
     '''Transferring data between registers and memory'''
-
 
     def transfer_to(self, other):
         other.value = self.value
@@ -55,9 +53,7 @@ class Register:
     def load(self, memory, address):
         self.value = memory[address]
 
-
     '''Mathematical and logical operations'''
-
 
     def msb(self, bits = 1):
         return self.value >> (self.width - bits)
@@ -121,6 +117,8 @@ class Register:
 
 
 class DoubleRegister(Register):
+    '''Double Register - made up of two standard registers'''
+
     def __init__(self, name, upper_register, lower_register):
         self.name = name
         self.upper_register = upper_register
@@ -146,6 +144,8 @@ class DoubleRegister(Register):
 
 
 class PseudoRegister(Register):
+    '''Pseudo-Register - memory location addressed by a separate "pointer" register'''
+
     def __init__(self, name, memory, pointer_register):
         self.name = name
         self.memory = memory
@@ -163,3 +163,64 @@ class PseudoRegister(Register):
     @value.setter
     def value(self, new_value):
         self.memory[self.pointer_register.value] = new_value
+
+
+
+class FlagsRegister(Register):
+    '''
+    Flags Register - collects the flags for a CPU in a single register object
+
+    **flag_index should be used to provide the names of the flags to be stored
+    and the index of the bit within the register that represents that flag's value
+    e.g. FlagRegister(width = 2, flag_at_index_0 = 0, flag_at_index_1 = 1)
+
+    If width is greater than the number of flag arguments given,
+    then all bits in the register without an associated flag will remain 0
+    '''
+
+    def __init__(self, *, width = 8, **flag_index):
+        self.width = width
+        self.flags = dict.fromkeys(flag_index.keys(), False)
+        self.index = flag_index
+
+
+    def __getitem__(self, flag):
+        return self.flags[flag]
+
+
+    def __setitem__(self, flag, value):
+        self.flags[flag] = value & 1
+
+    
+    @property
+    def value(self):
+        value = 0
+
+        for flag in self.flags.keys():
+            value |= self.flags[flag] << self.index[flag]
+
+        return value
+
+
+    @value.setter
+    def value(self, new_value):
+        for flag in self.flags.keys():
+            self.flags[flag] = new_value & (1 << self.index[flag]) > 0
+
+
+    def set_flag(self, flag):
+        self.flags[flag] = True
+    
+
+    def clear_flag(self, flag):
+        self.flags[flag] = False
+
+
+    def toggle_flag(self, flag):
+        self.flags[flag] = not self.flags[flag]
+
+
+    def dump(self):
+        print()
+        for flag, value in self.flags.items():
+            print(f"{flag}: {value}")

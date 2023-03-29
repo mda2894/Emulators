@@ -1,8 +1,8 @@
 '''SAP-3 CPU'''
+
 from lib.memory import Memory
-from lib.register import Register
 from lib.clock import Clock
-from lib.flagregister import FlagRegister
+from lib.registers import *
 from lib.instructions import *
 
 class CPU:
@@ -10,7 +10,7 @@ class CPU:
         '''Initialize CPU hardware'''
         
         # Memory
-        self.memory = Memory(0xFFFF)
+        self.memory = Memory(2**16)
 
         # Clock
         self.clock = Clock(clockspeed)
