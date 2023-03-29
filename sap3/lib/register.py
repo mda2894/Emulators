@@ -132,8 +132,6 @@ class DoubleRegister(Register):
 
         self.max_value = 2 ** self.width - 1
 
-        self.value = 0
-
 
     @property
     def value(self):
