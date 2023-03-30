@@ -136,8 +136,11 @@ class CPU:
         self.PC.inc()
 
 
-    def update_flags(self, *flags):
-        '''No arguments for all, "abc" for all but carry, otherwise list the specific flags'''
+    def update_flags(self, register = self.A, *flags):
+        '''
+        First argument represents the register that stores the value of the calculation - defaults to A
+        Subsequent arguments represent the flags to update - defaults to all, enter "abc" for all but carry
+        '''
         if not flags:
             zero = sign = carry = parity = True
         elif "abc" in flags:
@@ -150,16 +153,16 @@ class CPU:
             parity = "parity" in flags
 
         if zero:
-            self.F.flags["zero"] = self.A.value == 0
+            self.F.flags["zero"] = register.value == 0
 
         if sign:
-            self.F.flags["sign"] = self.A.msb()
+            self.F.flags["sign"] = register.msb()
 
         if carry:
-            self.F.flags["carry"] = self.A.carry
+            self.F.flags["carry"] = register.carry
 
         if parity:
-            n = self.A.value
+            n = register.value
             n ^= n >> 4
             n ^= n >> 2
             n ^= n >> 1
