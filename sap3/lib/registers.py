@@ -11,6 +11,7 @@ class Register:
         self.max_value = 2 ** width - 1
 
         self.value = 0
+        self.carry = 0
 
     '''Getting, setting, and clearing register value'''
 
@@ -22,6 +23,7 @@ class Register:
     @value.setter
     def value(self, new_value):
         self._value = new_value & self.max_value
+        self.carry = self._value < new_value
 
     
     def clear(self):
