@@ -136,16 +136,21 @@ class CPU:
         self.PC.inc()
 
 
-    def update_flags(self, register = self.A, *flags):
+    def update_flags(self, register, *flags):
         '''
         First argument represents the register that stores the value of the calculation - defaults to A
         Subsequent arguments represent the flags to update - defaults to all, enter "abc" for all but carry
         '''
+        if not register:
+            register = self.A
+
         if not flags:
             zero = sign = carry = parity = True
+
         elif "abc" in flags:
             zero = sign = parity = True
             carry = False
+
         else:
             zero = "zero" in flags
             sign = "sign" in flags

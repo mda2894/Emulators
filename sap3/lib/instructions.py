@@ -1,10 +1,10 @@
 '''Module for storing CPU instruction methods and instruction decoding table'''
 
 # instruction methods
+# UPDATE FLAGS
 
 def ADD(cpu, register):
     cpu.A.add(register)
-
     cpu.update_flags()
     cpu.clock.pulse(4)
 
@@ -32,107 +32,133 @@ def ADDL(cpu):
 def ADDM(cpu):
     ADD(cpu, cpu.M)
 
+
+def ANA(cpu, register):
+    cpu.A.and_reg(register)
+    cpu.update_flags()
+    cpu.clock.pulse(4)
+
+def ANAA(cpu):
+    ANA(cpu, cpu.A)
     
 def ANAB(cpu):
-    cpu.A.and_reg(cpu.B)
-
-    cpu.update_flags()
-    cpu.clock.pulse(4)
-
+    ANA(cpu, cpu.B)
 
 def ANAC(cpu):
-    cpu.A.and_reg(cpu.C)
+    ANA(cpu, cpu.C)
 
-    cpu.update_flags()
-    cpu.clock.pulse(4)
+def ANAD(cpu):
+    ANA(cpu, cpu.D)
+
+def ANAE(cpu):
+    ANA(cpu, cpu.E)
+
+def ANAH(cpu):
+    ANA(cpu, cpu.H)
+
+def ANAL(cpu):
+    ANA(cpu, cpu.L)
+
+def ANAM(cpu):
+    ANA(cpu, cpu.M)
 
 
 def ANI(cpu):
     cpu.fetch_byte()
-
     cpu.A.and_reg(cpu.W)
-
     cpu.update_flags()
     cpu.clock.pulse(7)
 
 
+# needs updating for stack operation
 def CALL(cpu):
     cpu.memory[0xFFFE] = cpu.PC.value # store lower byte of PC
     cpu.memory[0XFFFF] = cpu.PC.value >> 8 # store upper byte of PC
-
     cpu.fetch_address() # fetch subroutine address
     cpu.PC.transfer_from(cpu.WZ) # load subroutine address into PC
-
     cpu.clock.pulse(18)
 
 
 def CMA(cpu):
     cpu.A.comp()
-
     cpu.clock.pulse(4)
 
+
+def DCR(cpu, register):
+    register.dec()
+    cpu.update_flags()
+    cpu.clock.pulse(4)
 
 def DCRA(cpu):
-    cpu.A.dec()
-
-    cpu.update_flags()
-    cpu.clock.pulse(4)
-
+    DCR(cpu, cpu.A)
 
 def DCRB(cpu):
-    cpu.B.dec()
-
-    cpu.update_flags()
-    cpu.clock.pulse(4)
-
+    DCR(cpu, cpu.B)
 
 def DCRC(cpu):
-    cpu.C.dec()
+    DCR(cpu, cpu.C)
 
-    cpu.update_flags()
-    cpu.clock.pulse(4)
+def DCRD(cpu):
+    DCR(cpu, cpu.D)
+
+def DCRE(cpu):
+    DCR(cpu, cpu.E)
+
+def DCRH(cpu):
+    DCR(cpu, cpu.H)
+
+def DCRL(cpu):
+    DCR(cpu, cpu.L)
+
+def DCRM(cpu):
+    DCR(cpu, cpu.M)
 
 
 def HLT(cpu):
     cpu.halt = True
-
     cpu.clock.pulse(5)
     cpu.clock.stop()
 
 
 def IN(cpu):
     cpu.A.transfer_from(cpu.IN)
-
     cpu.clock.update(4)
     
     
-def INRA(cpu):
-    cpu.A.inc()
-
+def INR(cpu, register):
+    register.inc()
     cpu.update_flags()
     cpu.clock.pulse(4)
 
+def INRA(cpu):
+    INR(cpu, cpu.A)
 
 def INRB(cpu):
-    cpu.B.inc()
-
-    cpu.update_flags()
-    cpu.clock.pulse(4)
-
+    INR(cpu, cpu.B)
 
 def INRC(cpu):
-    cpu.C.inc()
+    INR(cpu, cpu.C)
 
-    cpu.update_flags()
-    cpu.clock.pulse(4)
+def INRD(cpu):
+    INR(cpu, cpu.D)
+
+def INRE(cpu):
+    INR(cpu, cpu.E)
+
+def INRH(cpu):
+    INR(cpu, cpu.H)
+
+def INRL(cpu):
+    INR(cpu, cpu.L)
+
+def INRM(cpu):
+    INR(cpu, cpu.M)
 
 
 def JM(cpu):
     if cpu.flags["sign"]:
         cpu.fetch_address()
-
         cpu.PC.transfer_from(cpu.WZ)
-
         cpu.clock.pulse(10)
 
     else:
@@ -141,18 +167,14 @@ def JM(cpu):
 
 def JMP(cpu):
     cpu.fetch_address()
-
     cpu.PC.transfer_from(cpu.WZ)
-
     cpu.clock.pulse(10)
 
 
 def JNZ(cpu):
     if not cpu.flags["zero"]:
         cpu.fetch_address()
-
         cpu.PC.transfer_from(cpu.WZ)
-
         cpu.clock.pulse(10)
 
     else:
@@ -162,9 +184,7 @@ def JNZ(cpu):
 def JZ(cpu):
     if cpu.flags["zero"]:
         cpu.fetch_address()
-
         cpu.PC.transfer_from(cpu.WZ)
-
         cpu.clock.pulse(10)
 
     else:
@@ -173,169 +193,368 @@ def JZ(cpu):
 
 def LDA(cpu):
     cpu.fetch_address()
-
     cpu.A.load(cpu.memory, cpu.WZ.value)
-
     cpu.clock.pulse(13)
 
 
+def MOV(cpu, reg1, reg2):
+    reg1.transfer_from(reg2)
+    cpu.clock.pulse(4)
+
+def MOVAA(cpu):
+    NOP(cpu)
+
 def MOVAB(cpu):
-    cpu.B.transfer_to(cpu.A)
-
-    cpu.clock.pulse(4)
-
-
+    MOV(cpu, cpu.A, cpu.B)
+    
 def MOVAC(cpu):
-    cpu.C.transfer_to(cpu.A)
+    MOV(cpu, cpu.A, cpu.C)
 
-    cpu.clock.pulse(4)
+def MOVAD(cpu):
+    MOV(cpu, cpu.A, cpu.D)
 
+def MOVAE(cpu):
+    MOV(cpu, cpu.A, cpu.E)
+
+def MOVAH(cpu):
+    MOV(cpu, cpu.A, cpu.H)
+
+def MOVAL(cpu):
+    MOV(cpu, cpu.A, cpu.L)
+
+def MOVAM(cpu):
+    MOV(cpu, cpu.A, cpu.M)
 
 def MOVBA(cpu):
-    cpu.A.transfer_to(cpu.B)
+    MOV(cpu, cpu.B, cpu.A)
 
-    cpu.clock.pulse(4)
-
+def MOVBB(cpu):
+    NOP(cpu)
 
 def MOVBC(cpu):
-    cpu.C.transfer_to(cpu.B)
+    MOV(cpu, cpu.B, cpu.C)
 
-    cpu.clock.pulse(4)
+def MOVBD(cpu):
+    MOV(cpu, cpu.B, cpu.D)
 
+def MOVBE(cpu):
+    MOV(cpu, cpu.B, cpu.E)
+
+def MOVBH(cpu):
+    MOV(cpu, cpu.B, cpu.H)
+
+def MOVBL(cpu):
+    MOV(cpu, cpu.B, cpu.L)
+
+def MOVBM(cpu):
+    MOV(cpu, cpu.B, cpu.M)
 
 def MOVCA(cpu):
-    cpu.A.transfer_to(cpu.C)
-
-    cpu.clock.pulse(4)
-
+    MOV(cpu, cpu.C, cpu.A)
 
 def MOVCB(cpu):
-    cpu.B.transfer_to(cpu.C)
+    MOV(cpu, cpu.C, cpu.B)
 
-    cpu.clock.pulse(4)
+def MOVCC(cpu):
+    NOP(cpu)
 
+def MOVCD(cpu):
+    MOV(cpu, cpu.C, cpu.D)
+
+def MOVCE(cpu):
+    MOV(cpu, cpu.C, cpu.E)
+
+def MOVCH(cpu):
+    MOV(cpu, cpu.C, cpu.H)
+
+def MOVCL(cpu):
+    MOV(cpu, cpu.C, cpu.L)
+
+def MOVCM(cpu):
+    MOV(cpu, cpu.C, cpu.M)
+
+def MOVDA(cpu):
+    MOV(cpu, cpu.D, cpu.A)
+
+def MOVDB(cpu):
+    MOV(cpu, cpu.D, cpu.B)
+
+def MOVDC(cpu):
+    MOV(cpu, cpu.D, cpu.C)
+
+def MOVDD(cpu):
+    NOP(cpu)
+
+def MOVDE(cpu):
+    MOV(cpu, cpu.D, cpu.E)
+
+def MOVDH(cpu):
+    MOV(cpu, cpu.D, cpu.H)
+
+def MOVDL(cpu):
+    MOV(cpu, cpu.D, cpu.L)
+
+def MOVDM(cpu):
+    MOV(cpu, cpu.D, cpu.M)
+
+def MOVEA(cpu):
+    MOV(cpu, cpu.E, cpu.A)
+
+def MOVEB(cpu):
+    MOV(cpu, cpu.E, cpu.B)
+
+def MOVEC(cpu):
+    MOV(cpu, cpu.E, cpu.C)
+
+def MOVED(cpu):
+    MOV(cpu, cpu.E, cpu.D)
+
+def MOVEE(cpu):
+    NOP(cpu)
+
+def MOVEH(cpu):
+    MOV(cpu, cpu.E, cpu.H)
+
+def MOVEL(cpu):
+    MOV(cpu, cpu.E, cpu.L)
+
+def MOVEM(cpu):
+    MOV(cpu, cpu.E, cpu.M)
+
+def MOVHA(cpu):
+    MOV(cpu, cpu.H, cpu.A)
+
+def MOVHB(cpu):
+    MOV(cpu, cpu.H, cpu.B)
+
+def MOVHC(cpu):
+    MOV(cpu, cpu.H, cpu.C)
+
+def MOVHD(cpu):
+    MOV(cpu, cpu.H, cpu.D)
+
+def MOVHE(cpu):
+    MOV(cpu, cpu.H, cpu.E)
+
+def MOVHH(cpu):
+    NOP(cpu)
+
+def MOVHL(cpu):
+    MOV(cpu, cpu.H, cpu.L)
+
+def MOVHM(cpu):
+    MOV(cpu, cpu.H, cpu.M)
+
+def MOVLA(cpu):
+    MOV(cpu, cpu.L, cpu.A)
+
+def MOVLB(cpu):
+    MOV(cpu, cpu.L, cpu.B)
+
+def MOVLC(cpu):
+    MOV(cpu, cpu.L, cpu.C)
+
+def MOVLD(cpu):
+    MOV(cpu, cpu.L, cpu.D)
+
+def MOVLE(cpu):
+    MOV(cpu, cpu.L, cpu.E)
+
+def MOVLH(cpu):
+    MOV(cpu, cpu.L, cpu.H)
+
+def MOVLL(cpu):
+    NOP(cpu)
+
+def MOVLM(cpu):
+    MOV(cpu, cpu.L, cpu.M)
+
+def MOVMA(cpu):
+    MOV(cpu, cpu.M, cpu.A)
+
+def MOVMB(cpu):
+    MOV(cpu, cpu.M, cpu.B)
+
+def MOVMC(cpu):
+    MOV(cpu, cpu.M, cpu.C)
+
+def MOVMD(cpu):
+    MOV(cpu, cpu.M, cpu.D)
+
+def MOVME(cpu):
+    MOV(cpu, cpu.M, cpu.E)
+
+def MOVMH(cpu):
+    MOV(cpu, cpu.M, cpu.H)
+
+def MOVML(cpu):
+    MOV(cpu, cpu.M, cpu.L)
+
+
+def MVI(cpu, register):
+    cpu.fetch_byte()
+    register.transfer_from(cpu.W)
+    cpu.clock.pulse(7)
 
 def MVIA(cpu):
-    cpu.fetch_byte()
-
-    cpu.TMP.transfer_to(cpu.A)
-
-    cpu.clock.pulse(7)
-
+    MVI(cpu, cpu.A)
 
 def MVIB(cpu):
-    cpu.fetch_byte()
-
-    cpu.TMP.transfer_to(cpu.B)
-
-    cpu.clock.pulse(7)
-
+    MVI(cpu, cpu.B)
 
 def MVIC(cpu):
-    cpu.fetch_byte()
+    MVI(cpu, cpu.C)
 
-    cpu.TMP.transfer_to(cpu.C)
+def MVID(cpu):
+    MVI(cpu, cpu.D)
 
-    cpu.clock.pulse(7)
+def MVIE(cpu):
+    MVI(cpu, cpu.E)
+
+def MVIH(cpu):
+    MVI(cpu, cpu.H)
+
+def MVIL(cpu):
+    MVI(cpu, cpu.L)
+
+def MVIM(cpu):
+    MVI(cpu, cpu.M)
 
 
 def NOP(cpu):
     cpu.clock.pulse(4)
 
 
-def ORAB(cpu):
-    cpu.A.or_reg(cpu.B)
-
+def ORA(cpu, register):
+    cpu.A.or_reg(register)
     cpu.update_flags()
     cpu.clock.pulse(4)
 
+def ORAA(cpu):
+    ORA(cpu, cpu.A)
+
+def ORAB(cpu):
+    ORA(cpu, cpu.B)
 
 def ORAC(cpu):
-    cpu.A.or_reg(cpu.C)
+    ORA(cpu, cpu.C)
 
-    cpu.update_flags()
-    cpu.clock.pulse(4)
+def ORAD(cpu):
+    ORA(cpu, cpu.D)
+
+def ORAE(cpu):
+    ORA(cpu, cpu.E)
+
+def ORAH(cpu):
+    ORA(cpu, cpu.H)
+
+def ORAL(cpu):
+    ORA(cpu, cpu.L)
+
+def ORAM(cpu):
+    ORA(cpu, cpu.M)
 
 
 def ORI(cpu):
     cpu.fetch_byte()
-
     cpu.A.or_reg(cpu.W)
-
     cpu.update_flags()
     cpu.clock.pulse(7)
 
 
 def OUT(cpu):
     cpu.A.transfer_to(cpu.OUT)
-
     print(f"\n{cpu.A.value:08b} {cpu.A.value:02x}")
-
     cpu.clock.pulse(4)
 
 
 def RAL(cpu):
     cpu.A.rol()
-
     cpu.clock.pulse(4)
 
 
 def RAR(cpu):
     cpu.A.ror()
-
     cpu.clock.pulse(4)
 
 
+# needs updating for stack operation
 def RET(cpu):
     cpu.W.load(cpu.memory, 0xFFFF)
     cpu.Z.load(cpu.memory, 0xFFFe)
-
     cpu.PC.transfer_from(cpu.WZ)
-
     cpu.clock.pulse(10)
 
 
 def STA(cpu):
     cpu.fetch_address()
-
     cpu.A.store(cpu.memory, cpu.WZ.value)
-
     cpu.clock.pulse(13)
 
 
-def SUBB(cpu):
-    cpu.A.sub(cpu.B)
-
+def SUB(cpu, register):
+    cpu.A.sub(register)
     cpu.update_flags()
     cpu.clock.pulse(4)
 
+def SUBA(cpu):
+    SUB(cpu, cpu.A)
+
+def SUBB(cpu):
+    SUB(cpu, cpu.B)
 
 def SUBC(cpu):
-    cpu.A.sub(cpu.C)
+    SUB(cpu, cpu.C)
 
+def SUBD(cpu):
+    SUB(cpu, cpu.D)
+
+def SUBE(cpu):
+    SUB(cpu, cpu.E)
+
+def SUBH(cpu):
+    SUB(cpu, cpu.H)
+
+def SUBL(cpu):
+    SUB(cpu, cpu.L)
+
+def SUBM(cpu):
+    SUB(cpu, cpu.M)
+
+
+def XRA(cpu, register):
+    cpu.A.xor_reg(register)
     cpu.update_flags()
     cpu.clock.pulse(4)
 
+def XRAA(cpu):
+    XRA(cpu, cpu.A)
 
 def XRAB(cpu):
-    cpu.A.xor_reg(cpu.B)
-
-    cpu.update_flags()
-    cpu.clock.pulse(4)
-
+    XRA(cpu, cpu.B)
 
 def XRAC(cpu):
-    cpu.A.xor_reg(cpu.C)
+    XRA(cpu, cpu.C)
 
-    cpu.update_flags()
-    cpu.clock.pulse(4)
+def XRAD(cpu):
+    XRA(cpu, cpu.D)
+
+def XRAE(cpu):
+    XRA(cpu, cpu.E)
+
+def XRAH(cpu):
+    XRA(cpu, cpu.H)
+
+def XRAL(cpu):
+    XRA(cpu, cpu.L)
+
+def XRAM(cpu):
+    XRA(cpu, cpu.M)
 
 
 def XRI(cpu):
     cpu.fetch_byte()
-
     cpu.A.xor_reg(cpu.W)
-
     cpu.update_flags()
     cpu.clock.pulse(7)
 
