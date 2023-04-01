@@ -27,6 +27,9 @@ class CPU:
         # Accumulator
         self.A = self.registers.append(Register("A")) or self.registers[-1]
 
+        # ALU temporary register (for compare instructions)
+        self.TMP = self.registers.append(Register("TMP")) or self.registers[-1]
+
         # B & C general purpose registers
         self.B = self.registers.append(Register("B")) or self.registers[-1]
         self.C = self.registers.append(Register("C")) or self.registers[-1]
@@ -120,9 +123,9 @@ class CPU:
 
 
     def fetch_byte(self):
-        '''Fetch the next byte of data from memory - store in W'''
+        '''Fetch the next byte of data from memory - store in Z'''
 
-        self.W.load(self.memory, self.PC.value)
+        self.Z.load(self.memory, self.PC.value)
         self.PC.inc()
 
 

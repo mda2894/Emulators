@@ -65,12 +65,12 @@ class Register:
         return self.value & 2 ** bits - 1
 
 
-    def inc(self):
-        self.value += 1
+    def inc(self, n = 1):
+        self.value += n
 
 
-    def dec(self):
-        self.value -= 1
+    def dec(self, n = 1):
+        self.value -= n
 
 
     def comp(self):
@@ -115,6 +115,15 @@ class Register:
 
     def rol(self, rot_bits = 1):
         self.value = (self.value << (rot_bits % self.width)) | (self.value >> (self.width - (rot_bits % self.width)))
+
+
+    # set the i-th bit of this register to x
+    def set_bit(self, i, x):
+        mask = 1 << i
+        if x:
+            self.value |= mask
+        else:
+            self.value &= ~mask
 
 
 

@@ -1,7 +1,49 @@
 '''Module for storing CPU instruction methods and instruction decoding table'''
 
 # instruction methods
+
 # UPDATE FLAGS
+# CHECK CLOCK TIMINGS
+
+
+def ACI(cpu):
+    cpu.fetch_byte()
+    cpu.A.value += cpu.Z.value + cpu.flags["carry"]
+    cpu.update_flags()
+    cpu.clock.pulse(7)
+
+
+def ADC(cpu, register):
+    cpu.A.value += register.value + cpu.flags["carry"]
+    cpu.update_flags()
+    cpu.clock.pulse(4)
+
+def ADCA(cpu):
+    ADC(cpu, cpu.A)
+
+def ADCB(cpu):
+    ADC(cpu, cpu.B)
+
+def ADCC(cpu):
+    ADC(cpu, cpu.C)
+
+def ADCD(cpu):
+    ADC(cpu, cpu.D)
+
+def ADCE(cpu):
+    ADC(cpu, cpu.E)
+
+def ADCH(cpu):
+    ADC(cpu, cpu.H)
+
+def ADCL(cpu):
+    ADC(cpu, cpu.L)
+
+def ADCM(cpu):
+    cpu.A.value += cpu.M.value + cpu.flags["carry"]
+    cpu.update_flags()
+    cpu.clock.pulse(7)
+
 
 def ADD(cpu, register):
     cpu.A.add(register)
@@ -30,7 +72,16 @@ def ADDL(cpu):
     ADD(cpu, cpu.L)
 
 def ADDM(cpu):
-    ADD(cpu, cpu.M)
+    cpu.A.add(cpu.M)
+    cpu.update_flags()
+    cpu.clock.pulse(7)
+
+
+def ADI(cpu):
+    cpu.fetch_byte()
+    cpu.A.add(cpu.Z)
+    cpu.update_flags()
+    cpu.clock.pulse(7)
 
 
 def ANA(cpu, register):
@@ -60,23 +111,43 @@ def ANAL(cpu):
     ANA(cpu, cpu.L)
 
 def ANAM(cpu):
-    ANA(cpu, cpu.M)
-
-
-def ANI(cpu):
-    cpu.fetch_byte()
-    cpu.A.and_reg(cpu.W)
+    cpu.A.and_reg(cpu.M)
     cpu.update_flags()
     cpu.clock.pulse(7)
 
 
-# needs updating for stack operation
+def ANI(cpu):
+    cpu.fetch_byte()
+    cpu.A.and_reg(cpu.Z)
+    cpu.update_flags()
+    cpu.clock.pulse(7)
+
+
 def CALL(cpu):
-    cpu.memory[0xFFFE] = cpu.PC.value # store lower byte of PC
-    cpu.memory[0XFFFF] = cpu.PC.value >> 8 # store upper byte of PC
-    cpu.fetch_address() # fetch subroutine address
-    cpu.PC.transfer_from(cpu.WZ) # load subroutine address into PC
+    cpu.memory[cpu.SP.value] = cpu.PC.msb(8)
+    cpu.SP.dec()
+    cpu.memory[cpu.SP.value] = cpu.PC.lsb(8)
+    cpu.SP.dec()
+
+    cpu.fetch_address()
+    cpu.PC.transfer_from(cpu.WZ)
     cpu.clock.pulse(18)
+
+
+def CC(cpu):
+    if cpu.flags["carry"]:
+        CALL(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock_pulse(9)
+
+
+def CM(cpu):
+    if cpu.flags["sign"]:
+        CALL(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock_pulse(9)
 
 
 def CMA(cpu):
@@ -84,9 +155,104 @@ def CMA(cpu):
     cpu.clock.pulse(4)
 
 
+def CMC(cpu):
+    cpu.flags.toggle_flag("carry")
+    cpu.clock.pulse(4)
+
+
+def CMP(cpu, register):
+    cpu.A.transfer_to(cpu.TMP)
+    cpu.TMP.sub(register)
+    cpu.update_flags(cpu.TMP)
+    cpu.clock.pulse(4)
+
+def CMPA(cpu):
+    CMP(cpu, cpu.A)
+
+def CMPB(cpu):
+    CMP(cpu, cpu.B)
+
+def CMPC(cpu):
+    CMP(cpu, cpu.C)
+
+def CMPD(cpu):
+    CMP(cpu, cpu.D)
+
+def CMPE(cpu):
+    CMP(cpu, cpu.E)
+
+def CMPH(cpu):
+    CMP(cpu, cpu.H)
+
+def CMPL(cpu):
+    CMP(cpu, cpu.L)
+
+def CMPM(cpu):
+    cpu.A.transfer_to(cpu.TMP)
+    cpu.TMP.sub(cpu.M)
+    cpu.update_flags(cpu.TMP)
+    cpu.clock.pulse(7)
+
+
+def CNC(cpu):
+    if not cpu.flags["carry"]:
+        CALL(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock_pulse(9)
+
+
+def CNZ(cpu):
+    if not cpu.flags["zero"]:
+        CALL(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock_pulse(9)
+
+
+def CP(cpu):
+    if not cpu.flags["sign"]:
+        CALL(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock_pulse(9)
+
+
+def CPE(cpu):
+    if cpu.flags["parity"]:
+        CALL(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock_pulse(9)
+
+
+def CPI(cpu):
+    cpu.fetch_byte()
+    cpu.A.transfer_to(cpu.TMP)
+    cpu.TMP.sub(cpu.Z)
+    cpu.update_flags(cpu.TMP)
+    cpu.clock.pulse(7)
+
+
+def CPO(cpu):
+    if not cpu.flags["parity"]:
+        CALL(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock_pulse(9)
+
+
+def CZ(cpu):
+    if cpu.flags["zero"]:
+        CALL(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock_pulse(9)
+
+
 def DCR(cpu, register):
     register.dec()
-    cpu.update_flags()
+    cpu.update_flags(register, "abc")
     cpu.clock.pulse(4)
 
 def DCRA(cpu):
@@ -111,7 +277,9 @@ def DCRL(cpu):
     DCR(cpu, cpu.L)
 
 def DCRM(cpu):
-    DCR(cpu, cpu.M)
+    cpu.M.dec()
+    cpu.update_flags(cpu.M, "abc")
+    cpu.clock.pulse(10)
 
 
 def HLT(cpu):
@@ -121,13 +289,14 @@ def HLT(cpu):
 
 
 def IN(cpu):
+    cpu.PC.inc()
     cpu.A.transfer_from(cpu.IN)
-    cpu.clock.update(4)
+    cpu.clock.update(10)
     
     
 def INR(cpu, register):
     register.inc()
-    cpu.update_flags()
+    cpu.update_flags(register, "abc")
     cpu.clock.pulse(4)
 
 def INRA(cpu):
@@ -152,16 +321,24 @@ def INRL(cpu):
     INR(cpu, cpu.L)
 
 def INRM(cpu):
-    INR(cpu, cpu.M)
+    cpu.M.inc()
+    cpu.update_flags(cpu.M, "abc")
+    cpu.clock.pulse(10)
+
+
+def JC(cpu):
+    if cpu.flags["carry"]:
+        JMP(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock.pulse(7)
 
 
 def JM(cpu):
     if cpu.flags["sign"]:
-        cpu.fetch_address()
-        cpu.PC.transfer_from(cpu.WZ)
-        cpu.clock.pulse(10)
-
+        JMP(cpu)
     else:
+        cpu.PC.inc(2)
         cpu.clock.pulse(7)
 
 
@@ -171,23 +348,51 @@ def JMP(cpu):
     cpu.clock.pulse(10)
 
 
+def JNC(cpu):
+    if not cpu.flags["carry"]:
+        JMP(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock.pulse(7)
+
+
 def JNZ(cpu):
     if not cpu.flags["zero"]:
-        cpu.fetch_address()
-        cpu.PC.transfer_from(cpu.WZ)
-        cpu.clock.pulse(10)
-
+        JMP(cpu)
     else:
+        cpu.PC.inc(2)
+        cpu.clock.pulse(7)
+
+
+def JP(cpu):
+    if not cpu.flags["sign"]:
+        JMP(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock.pulse(7)
+
+
+def JPE(cpu):
+    if cpu.flags["parity"]:
+        JMP(cpu)
+    else:
+        cpu.PC.inc(2)
+        cpu.clock.pulse(7)
+
+
+def JPO(cpu):
+    if not cpu.flags["parity"]:
+        JMP(cpu)
+    else:
+        cpu.PC.inc(2)
         cpu.clock.pulse(7)
 
 
 def JZ(cpu):
     if cpu.flags["zero"]:
-        cpu.fetch_address()
-        cpu.PC.transfer_from(cpu.WZ)
-        cpu.clock.pulse(10)
-
+        JMP(cpu)
     else:
+        cpu.PC.inc(2)
         cpu.clock.pulse(7)
 
 
@@ -223,7 +428,8 @@ def MOVAL(cpu):
     MOV(cpu, cpu.A, cpu.L)
 
 def MOVAM(cpu):
-    MOV(cpu, cpu.A, cpu.M)
+    cpu.A.transfer_from(cpu.M)
+    cpu.clock.pulse(7)
 
 def MOVBA(cpu):
     MOV(cpu, cpu.B, cpu.A)
@@ -247,7 +453,8 @@ def MOVBL(cpu):
     MOV(cpu, cpu.B, cpu.L)
 
 def MOVBM(cpu):
-    MOV(cpu, cpu.B, cpu.M)
+    cpu.B.transfer_from(cpu.M)
+    cpu.clock.pulse(7)
 
 def MOVCA(cpu):
     MOV(cpu, cpu.C, cpu.A)
@@ -271,7 +478,8 @@ def MOVCL(cpu):
     MOV(cpu, cpu.C, cpu.L)
 
 def MOVCM(cpu):
-    MOV(cpu, cpu.C, cpu.M)
+    cpu.C.transfer_from(cpu.M)
+    cpu.clock.pulse(7)
 
 def MOVDA(cpu):
     MOV(cpu, cpu.D, cpu.A)
@@ -295,7 +503,8 @@ def MOVDL(cpu):
     MOV(cpu, cpu.D, cpu.L)
 
 def MOVDM(cpu):
-    MOV(cpu, cpu.D, cpu.M)
+    cpu.D.transfer_from(cpu.M)
+    cpu.clock.pulse(7)
 
 def MOVEA(cpu):
     MOV(cpu, cpu.E, cpu.A)
@@ -319,7 +528,8 @@ def MOVEL(cpu):
     MOV(cpu, cpu.E, cpu.L)
 
 def MOVEM(cpu):
-    MOV(cpu, cpu.E, cpu.M)
+    cpu.E.transfer_from(cpu.M)
+    cpu.clock.pulse(7)
 
 def MOVHA(cpu):
     MOV(cpu, cpu.H, cpu.A)
@@ -343,7 +553,8 @@ def MOVHL(cpu):
     MOV(cpu, cpu.H, cpu.L)
 
 def MOVHM(cpu):
-    MOV(cpu, cpu.H, cpu.M)
+    cpu.H.transfer_from(cpu.M)
+    cpu.clock.pulse(7)
 
 def MOVLA(cpu):
     MOV(cpu, cpu.L, cpu.A)
@@ -367,33 +578,41 @@ def MOVLL(cpu):
     NOP(cpu)
 
 def MOVLM(cpu):
-    MOV(cpu, cpu.L, cpu.M)
+    cpu.L.transfer_from(cpu.M)
+    cpu.clock.pulse(7)
 
 def MOVMA(cpu):
-    MOV(cpu, cpu.M, cpu.A)
+    cpu.M.transfer_from(cpu.A)
+    cpu.clock.pulse(7)
 
 def MOVMB(cpu):
-    MOV(cpu, cpu.M, cpu.B)
+    cpu.M.transfer_from(cpu.B)
+    cpu.clock.pulse(7)
 
 def MOVMC(cpu):
-    MOV(cpu, cpu.M, cpu.C)
+    cpu.M.transfer_from(cpu.C)
+    cpu.clock.pulse(7)
 
 def MOVMD(cpu):
-    MOV(cpu, cpu.M, cpu.D)
+    cpu.M.transfer_from(cpu.D)
+    cpu.clock.pulse(7)
 
 def MOVME(cpu):
-    MOV(cpu, cpu.M, cpu.E)
+    cpu.M.transfer_from(cpu.E)
+    cpu.clock.pulse(7)
 
 def MOVMH(cpu):
-    MOV(cpu, cpu.M, cpu.H)
+    cpu.M.transfer_from(cpu.H)
+    cpu.clock.pulse(7)
 
 def MOVML(cpu):
-    MOV(cpu, cpu.M, cpu.L)
+    cpu.M.transfer_from(cpu.L)
+    cpu.clock.pulse(7)
 
 
 def MVI(cpu, register):
     cpu.fetch_byte()
-    register.transfer_from(cpu.W)
+    register.transfer_from(cpu.Z)
     cpu.clock.pulse(7)
 
 def MVIA(cpu):
@@ -418,7 +637,9 @@ def MVIL(cpu):
     MVI(cpu, cpu.L)
 
 def MVIM(cpu):
-    MVI(cpu, cpu.M)
+    cpu.fetch_byte()
+    cpu.M.transfer_from(cpu.Z)
+    cpu.clock.pulse(10)
 
 
 def NOP(cpu):
@@ -452,44 +673,110 @@ def ORAL(cpu):
     ORA(cpu, cpu.L)
 
 def ORAM(cpu):
-    ORA(cpu, cpu.M)
+    cpu.A.or_reg(cpu.M)
+    cpu.update_flags()
+    cpu.clock.pulse(7)
 
 
 def ORI(cpu):
     cpu.fetch_byte()
-    cpu.A.or_reg(cpu.W)
+    cpu.A.or_reg(cpu.Z)
     cpu.update_flags()
     cpu.clock.pulse(7)
 
 
 def OUT(cpu):
+    cpu.PC.inc()
     cpu.A.transfer_to(cpu.OUT)
     print(f"\n{cpu.A.value:08b} {cpu.A.value:02x}")
-    cpu.clock.pulse(4)
+    cpu.clock.pulse(10)
 
 
 def RAL(cpu):
-    cpu.A.rol()
+    cpu.A.rol() # normal 8-bit rotate left
+    new_carry = cpu.A.lsb()
+    cpu.A.set_bit(0, cpu.flags["carry"]) # swap the lsb and carry bit
+    cpu.flags["carry"] = new_carry
     cpu.clock.pulse(4)
-
 
 def RAR(cpu):
-    cpu.A.ror()
+    cpu.A.ror() # normal 8-bit rotate right
+    new_carry = cpu.A.msb()
+    cpu.A.set_bit(7, cpu.flags["carry"]) # swap the msb and carry bit
+    cpu.flags["carry"] = new_carry
     cpu.clock.pulse(4)
 
 
-# needs updating for stack operation
 def RET(cpu):
-    cpu.W.load(cpu.memory, 0xFFFF)
-    cpu.Z.load(cpu.memory, 0xFFFe)
+    cpu.SP.inc()
+    cpu.Z.load(cpu.memory, cpu.SP.value)
+    cpu.SP.inc()
+    cpu.W.load(cpu.memory, cpu.SP.value)
+
     cpu.PC.transfer_from(cpu.WZ)
     cpu.clock.pulse(10)
+
+
+def RLC(cpu):
+    cpu.A.rol()
+    cpu.flags["carry"] = cpu.A.lsb()
+    cpu.clock.pulse(4)
+
+
+def RRC(cpu):
+    cpu.A.ror()
+    cpu.flags["carry"] = cpu.A.msb()
+    cpu.clock.pulse(4)
+
+
+def SBB(cpu, register):
+    cpu.A.value -= register.value + cpu.flags["carry"]
+    cpu.update_flags()
+    cpu.clock.pulse(4)
+
+def SBBA(cpu):
+    SBB(cpu, cpu.A)
+
+def SBBB(cpu):
+    SBB(cpu, cpu.B)
+
+def SBBC(cpu):
+    SBB(cpu, cpu.C)
+
+def SBBD(cpu):
+    SBB(cpu, cpu.D)
+
+def SBBE(cpu):
+    SBB(cpu, cpu.E)
+
+def SBBH(cpu):
+    SBB(cpu, cpu.H)
+
+def SBBL(cpu):
+    SBB(cpu, cpu.L)
+
+def SBBM(cpu):
+    cpu.A.value -= cpu.M.value + cpu.flags["carry"]
+    cpu.update_flags()
+    cpu.clock.pulse(7)
+
+
+def SBI(cpu):
+    cpu.fetch_byte()
+    cpu.A.value -= cpu.Z.value + cpu.flags["carry"]
+    cpu.update_flags()
+    cpu.clock.pulse(7)
 
 
 def STA(cpu):
     cpu.fetch_address()
     cpu.A.store(cpu.memory, cpu.WZ.value)
     cpu.clock.pulse(13)
+
+
+def STC(cpu):
+    cpu.flags.set_flag("carry")
+    cpu.clock.pulse(4)
 
 
 def SUB(cpu, register):
@@ -519,7 +806,16 @@ def SUBL(cpu):
     SUB(cpu, cpu.L)
 
 def SUBM(cpu):
-    SUB(cpu, cpu.M)
+    cpu.A.sub(cpu.M)
+    cpu.update_flags()
+    cpu.clock.pulse(7)
+
+
+def SUI(cpu):
+    cpu.fetch_byte()
+    cpu.A.sub(cpu.Z)
+    cpu.update_flags()
+    cpu.clock.pulse(7)
 
 
 def XRA(cpu, register):
@@ -549,12 +845,14 @@ def XRAL(cpu):
     XRA(cpu, cpu.L)
 
 def XRAM(cpu):
-    XRA(cpu, cpu.M)
+    cpu.A.xor_reg(cpu.M)
+    cpu.update_flags()
+    cpu.clock.pulse(7)
 
 
 def XRI(cpu):
     cpu.fetch_byte()
-    cpu.A.xor_reg(cpu.W)
+    cpu.A.xor_reg(cpu.Z)
     cpu.update_flags()
     cpu.clock.pulse(7)
 
