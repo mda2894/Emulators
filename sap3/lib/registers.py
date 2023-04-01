@@ -22,8 +22,8 @@ class Register:
 
     @value.setter
     def value(self, new_value):
+        self.carry = new_value > self.max_value
         self._value = new_value & self.max_value
-        self.carry = self._value < new_value
 
     
     def clear(self):
@@ -165,6 +165,8 @@ class PseudoRegister(Register):
         self.width = self.memory.width
         self.max_value = 2 ** self.width - 1
 
+        self.carry = 0
+
     
     @property
     def value(self):
@@ -173,6 +175,7 @@ class PseudoRegister(Register):
 
     @value.setter
     def value(self, new_value):
+        self.carry = new_value > self.max_value
         self.memory[self.pointer_register.value] = new_value
 
 

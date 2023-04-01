@@ -8,6 +8,8 @@ def program_mode(cpu):
 
     program = [0] * cpu.memory.size
     current = get_address_from_user()
+    if current == -1:
+        return
 
 
     while True:
@@ -23,6 +25,8 @@ def program_mode(cpu):
 
                 display_program_help()
                 current = get_address_from_user()
+                if current == -1:
+                    return
             
             case "run":
                 try:
@@ -32,6 +36,8 @@ def program_mode(cpu):
 
                     display_program_help()
                     current = get_address_from_user()
+                    if current == -1:
+                        return
 
                 except Exception as exc:
                     display_program_run_error()
@@ -44,6 +50,8 @@ def program_mode(cpu):
                 
                 display_program_help()
                 current = get_address_from_user()
+                if current == -1:
+                    return
 
             case "reset":
                 cpu.reset()
@@ -59,6 +67,8 @@ def program_mode(cpu):
 
             case "jump":
                 current = get_address_from_user()
+                if current == -1:
+                    return
 
             case "save":
                 print("\nPlease input a file name to save your program to. \
@@ -263,8 +273,10 @@ def get_address_from_user():
     
     while address < 0:
         try:
-            address = int(input("\nEnter address (hex 0000 - FFFF): "), 16)
+            address = int((cmd := input("\nEnter address (hex 0000 - FFFF): ")), 16)
         except Exception as exc:
+            if cmd == "exit":
+                break
             print("\nInvalid memory address")
             print(exc)
             continue

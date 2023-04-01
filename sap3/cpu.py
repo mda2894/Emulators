@@ -27,9 +27,6 @@ class CPU:
         # Accumulator
         self.A = self.registers.append(Register("A")) or self.registers[-1]
 
-        # ALU temporary register (for compare instructions)
-        self.TMP = self.registers.append(Register("TMP")) or self.registers[-1]
-
         # B & C general purpose registers
         self.B = self.registers.append(Register("B")) or self.registers[-1]
         self.C = self.registers.append(Register("C")) or self.registers[-1]
@@ -64,7 +61,7 @@ class CPU:
         # M pseudo-register
         self.M = self.registers.append(PseudoRegister("M", self.memory, self.HL)) or self.registers[-1]
 
-        # Stack pointer
+        # Stack pointer - 16 bits
         self.SP = self.registers.append(Register("SP", 16)) or self.registers[-1]
 
         # Program counter - 16 bits
@@ -72,6 +69,9 @@ class CPU:
 
         # Instruction register
         self.IR = self.registers.append(Register("IR")) or self.registers[-1]
+
+        # Output register
+        self.OUT = self.registers.append(Register("OUT")) or self.registers[-1]
 
         
     '''CPU operation methods'''
@@ -129,8 +129,8 @@ class CPU:
         self.PC.inc()
 
 
-    def fetch_address(self):
-        '''Fetch address from next two bytes - store in WZ'''
+    def fetch_double(self):
+        '''Fetch next two bytes - store in WZ'''
 
         self.Z.load(self.memory, self.PC.value) # load lower byte into Z
         self.PC.inc()
@@ -139,7 +139,7 @@ class CPU:
         self.PC.inc()
 
 
-    def update_flags(self, register, *flags):
+    def update_flags(self, register = None, *flags):
         '''
         First argument represents the register that stores the value of the calculation - defaults to A
         Subsequent arguments represent the flags to update - defaults to all, enter "abc" for all but carry
@@ -161,13 +161,13 @@ class CPU:
             parity = "parity" in flags
 
         if zero:
-            self.F.flags["zero"] = register.value == 0
+            self.F["zero"] = register.value == 0
 
         if sign:
-            self.F.flags["sign"] = register.msb()
+            self.F["sign"] = register.msb()
 
         if carry:
-            self.F.flags["carry"] = register.carry
+            self.F["carry"] = register.carry
 
         if parity:
             n = register.value
@@ -175,4 +175,4 @@ class CPU:
             n ^= n >> 2
             n ^= n >> 1
 
-            self.F.flags["parity"] = n & 1 == 0
+            self.F["parity"] = n & 1 == 0

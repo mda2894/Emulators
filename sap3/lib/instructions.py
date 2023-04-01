@@ -2,19 +2,15 @@
 
 # instruction methods
 
-# UPDATE FLAGS
-# CHECK CLOCK TIMINGS
-
-
 def ACI(cpu):
     cpu.fetch_byte()
-    cpu.A.value += cpu.Z.value + cpu.flags["carry"]
+    cpu.A.value += cpu.Z.value + cpu.F["carry"]
     cpu.update_flags()
     cpu.clock.pulse(7)
 
 
 def ADC(cpu, register):
-    cpu.A.value += register.value + cpu.flags["carry"]
+    cpu.A.value += register.value + cpu.F["carry"]
     cpu.update_flags()
     cpu.clock.pulse(4)
 
@@ -40,7 +36,7 @@ def ADCL(cpu):
     ADC(cpu, cpu.L)
 
 def ADCM(cpu):
-    cpu.A.value += cpu.M.value + cpu.flags["carry"]
+    cpu.A.value += cpu.M.value + cpu.F["carry"]
     cpu.update_flags()
     cpu.clock.pulse(7)
 
@@ -124,30 +120,30 @@ def ANI(cpu):
 
 
 def CALL(cpu):
+    cpu.SP.dec()
     cpu.memory[cpu.SP.value] = cpu.PC.msb(8)
     cpu.SP.dec()
     cpu.memory[cpu.SP.value] = cpu.PC.lsb(8)
-    cpu.SP.dec()
 
-    cpu.fetch_address()
+    cpu.fetch_double()
     cpu.PC.transfer_from(cpu.WZ)
     cpu.clock.pulse(18)
 
 
 def CC(cpu):
-    if cpu.flags["carry"]:
+    if cpu.F["carry"]:
         CALL(cpu)
     else:
         cpu.PC.inc(2)
-        cpu.clock_pulse(9)
+        cpu.clock.pulse(9)
 
 
 def CM(cpu):
-    if cpu.flags["sign"]:
+    if cpu.F["sign"]:
         CALL(cpu)
     else:
         cpu.PC.inc(2)
-        cpu.clock_pulse(9)
+        cpu.clock.pulse(9)
 
 
 def CMA(cpu):
@@ -156,15 +152,15 @@ def CMA(cpu):
 
 
 def CMC(cpu):
-    cpu.flags.toggle_flag("carry")
+    cpu.F.toggle_flag("carry")
     cpu.clock.pulse(4)
 
 
 def CMP(cpu, register):
-    cpu.A.transfer_to(cpu.TMP)
-    cpu.TMP.sub(register)
-    cpu.update_flags(cpu.TMP)
-    cpu.clock.pulse(4)
+    cpu.A.transfer_to(cpu.W)
+    cpu.W.sub(register)
+    cpu.update_flags(cpu.W)
+    cpu.clock.pulse(7)
 
 def CMPA(cpu):
     CMP(cpu, cpu.A)
@@ -188,66 +184,84 @@ def CMPL(cpu):
     CMP(cpu, cpu.L)
 
 def CMPM(cpu):
-    cpu.A.transfer_to(cpu.TMP)
-    cpu.TMP.sub(cpu.M)
-    cpu.update_flags(cpu.TMP)
+    cpu.A.transfer_to(cpu.W)
+    cpu.W.sub(cpu.M)
+    cpu.update_flags(cpu.W)
     cpu.clock.pulse(7)
 
 
 def CNC(cpu):
-    if not cpu.flags["carry"]:
+    if not cpu.F["carry"]:
         CALL(cpu)
     else:
         cpu.PC.inc(2)
-        cpu.clock_pulse(9)
+        cpu.clock.pulse(9)
 
 
 def CNZ(cpu):
-    if not cpu.flags["zero"]:
+    if not cpu.F["zero"]:
         CALL(cpu)
     else:
         cpu.PC.inc(2)
-        cpu.clock_pulse(9)
+        cpu.clock.pulse(9)
 
 
 def CP(cpu):
-    if not cpu.flags["sign"]:
+    if not cpu.F["sign"]:
         CALL(cpu)
     else:
         cpu.PC.inc(2)
-        cpu.clock_pulse(9)
+        cpu.clock.pulse(9)
 
 
 def CPE(cpu):
-    if cpu.flags["parity"]:
+    if cpu.F["parity"]:
         CALL(cpu)
     else:
         cpu.PC.inc(2)
-        cpu.clock_pulse(9)
+        cpu.clock.pulse(9)
 
 
 def CPI(cpu):
     cpu.fetch_byte()
-    cpu.A.transfer_to(cpu.TMP)
-    cpu.TMP.sub(cpu.Z)
-    cpu.update_flags(cpu.TMP)
+    cpu.A.transfer_to(cpu.W)
+    cpu.W.sub(cpu.Z)
+    cpu.update_flags(cpu.W)
     cpu.clock.pulse(7)
 
 
 def CPO(cpu):
-    if not cpu.flags["parity"]:
+    if not cpu.F["parity"]:
         CALL(cpu)
     else:
         cpu.PC.inc(2)
-        cpu.clock_pulse(9)
+        cpu.clock.pulse(9)
 
 
 def CZ(cpu):
-    if cpu.flags["zero"]:
+    if cpu.F["zero"]:
         CALL(cpu)
     else:
         cpu.PC.inc(2)
-        cpu.clock_pulse(9)
+        cpu.clock.pulse(9)
+
+
+def DAD(cpu, register):
+    cpu.HL.add(register)
+    cpu.update_flags(cpu.H, "carry")
+    cpu.clock.pulse(10)
+
+def DADB(cpu):
+    DAD(cpu, cpu.BC)
+
+def DADD(cpu):
+    DAD(cpu, cpu.DE)
+
+def DADH(cpu):
+    DAD(cpu, cpu.HL)
+
+def DADSP(cpu):
+    DAD(cpu, cpu.SP)
 
 
 def DCR(cpu, register):
@@ -282,16 +296,27 @@ def DCRM(cpu):
     cpu.clock.pulse(10)
 
 
+def DCX(cpu, register):
+    register.dec()
+    cpu.clock.pulse(6)
+
+def DCXB(cpu):
+    DCX(cpu, cpu.BC)
+
+def DCXD(cpu):
+    DCX(cpu, cpu.DE)
+
+def DCXH(cpu):
+    DCX(cpu, cpu.HL)
+
+def DCXSP(cpu):
+    DCX(cpu, cpu.SP)
+
+
 def HLT(cpu):
     cpu.halt = True
     cpu.clock.pulse(5)
     cpu.clock.stop()
-
-
-def IN(cpu):
-    cpu.PC.inc()
-    cpu.A.transfer_from(cpu.IN)
-    cpu.clock.update(10)
     
     
 def INR(cpu, register):
@@ -326,8 +351,25 @@ def INRM(cpu):
     cpu.clock.pulse(10)
 
 
+def INX(cpu, register):
+    register.inc()
+    cpu.clock.pulse(6)
+
+def INXB(cpu):
+    INX(cpu, cpu.BC)
+
+def INXD(cpu):
+    INX(cpu, cpu.DE)
+
+def INXH(cpu):
+    INX(cpu, cpu.HL)
+
+def INXSP(cpu):
+    INX(cpu, cpu.SP)
+
+
 def JC(cpu):
-    if cpu.flags["carry"]:
+    if cpu.F["carry"]:
         JMP(cpu)
     else:
         cpu.PC.inc(2)
@@ -335,7 +377,7 @@ def JC(cpu):
 
 
 def JM(cpu):
-    if cpu.flags["sign"]:
+    if cpu.F["sign"]:
         JMP(cpu)
     else:
         cpu.PC.inc(2)
@@ -343,13 +385,13 @@ def JM(cpu):
 
 
 def JMP(cpu):
-    cpu.fetch_address()
+    cpu.fetch_double()
     cpu.PC.transfer_from(cpu.WZ)
     cpu.clock.pulse(10)
 
 
 def JNC(cpu):
-    if not cpu.flags["carry"]:
+    if not cpu.F["carry"]:
         JMP(cpu)
     else:
         cpu.PC.inc(2)
@@ -357,7 +399,7 @@ def JNC(cpu):
 
 
 def JNZ(cpu):
-    if not cpu.flags["zero"]:
+    if not cpu.F["zero"]:
         JMP(cpu)
     else:
         cpu.PC.inc(2)
@@ -365,7 +407,7 @@ def JNZ(cpu):
 
 
 def JP(cpu):
-    if not cpu.flags["sign"]:
+    if not cpu.F["sign"]:
         JMP(cpu)
     else:
         cpu.PC.inc(2)
@@ -373,7 +415,7 @@ def JP(cpu):
 
 
 def JPE(cpu):
-    if cpu.flags["parity"]:
+    if cpu.F["parity"]:
         JMP(cpu)
     else:
         cpu.PC.inc(2)
@@ -381,7 +423,7 @@ def JPE(cpu):
 
 
 def JPO(cpu):
-    if not cpu.flags["parity"]:
+    if not cpu.F["parity"]:
         JMP(cpu)
     else:
         cpu.PC.inc(2)
@@ -389,7 +431,7 @@ def JPO(cpu):
 
 
 def JZ(cpu):
-    if cpu.flags["zero"]:
+    if cpu.F["zero"]:
         JMP(cpu)
     else:
         cpu.PC.inc(2)
@@ -397,9 +439,46 @@ def JZ(cpu):
 
 
 def LDA(cpu):
-    cpu.fetch_address()
+    cpu.fetch_double()
     cpu.A.load(cpu.memory, cpu.WZ.value)
     cpu.clock.pulse(13)
+
+
+def LDAX(cpu, register):
+    cpu.A.load(cpu.memory, register.value)
+    cpu.clock.pulse(7)
+
+def LDAXB(cpu):
+    LDAX(cpu, cpu.BC)
+
+def LDAXD(cpu):
+    LDAX(cpu, cpu.DE)
+
+
+def LHLD(cpu):
+    cpu.fetch_double()
+    cpu.L.load(cpu.memory, cpu.WZ.value)
+    cpu.WZ.inc()
+    cpu.H.load(cpu.memory, cpu.WZ.value)
+    cpu.clock.pulse(16)
+
+
+def LXI(cpu, register):
+    cpu.fetch_double()
+    register.value = cpu.W.value << 8 | cpu.Z.value
+    cpu.clock.pulse(10)
+
+def LXIB(cpu):
+    LXI(cpu, cpu.BC)
+
+def LXID(cpu):
+    LXI(cpu, cpu.DE)
+
+def LXIH(cpu):
+    LXI(cpu, cpu.HL)
+
+def LXISP(cpu):
+    LXI(cpu, cpu.SP)
 
 
 def MOV(cpu, reg1, reg2):
@@ -687,31 +766,83 @@ def ORI(cpu):
 
 def OUT(cpu):
     cpu.PC.inc()
-    cpu.A.transfer_to(cpu.OUT)
-    print(f"\n{cpu.A.value:08b} {cpu.A.value:02x}")
+    cpu.OUT.transfer_from(cpu.A)
+    print(f"\n{cpu.OUT.value:08b} {cpu.OUT.value:02x}")
     cpu.clock.pulse(10)
+
+
+def PCHL(cpu):
+    cpu.PC.transfer_from(cpu.HL)
+    cpu.clock.pulse(6)
+
+
+def POP(cpu, upper_register, lower_register):
+    lower_register.load(cpu.memory, cpu.SP.value)
+    cpu.SP.inc()
+    upper_register.load(cpu.memory, cpu.SP.value)
+    cpu.SP.inc()
+    cpu.clock.pulse(10)
+
+def POPB(cpu):
+    POP(cpu, cpu.B, cpu.C)
+
+def POPD(cpu):
+    POP(cpu, cpu.D, cpu.E)
+
+def POPH(cpu):
+    POP(cpu, cpu.H, cpu.L)
+
+def POPPSW(cpu):
+    POP(cpu, cpu.A, cpu.F)
+
+
+def PUSH(cpu, upper_register, lower_register):
+    cpu.sp.dec()
+    upper_register.store(cpu.memory, cpu.SP.value)
+    cpu.sp.dec()
+    lower_register.store(cpu.memory, cpu.SP.value)
+    cpu.clock.pulse(12)
+
+def PUSHB(cpu):
+    PUSH(cpu, cpu.B, cpu.C)
+
+def PUSHD(cpu):
+    PUSH(cpu, cpu.D, cpu.E)
+
+def PUSHH(cpu):
+    PUSH(cpu, cpu.H, cpu.L)
+
+def PUSHPSW(cpu):
+    PUSH(cpu, cpu.A, cpu.F)
 
 
 def RAL(cpu):
     cpu.A.rol() # normal 8-bit rotate left
     new_carry = cpu.A.lsb()
-    cpu.A.set_bit(0, cpu.flags["carry"]) # swap the lsb and carry bit
-    cpu.flags["carry"] = new_carry
+    cpu.A.set_bit(0, cpu.F["carry"]) # swap the lsb and carry bit
+    cpu.F["carry"] = new_carry
     cpu.clock.pulse(4)
 
 def RAR(cpu):
     cpu.A.ror() # normal 8-bit rotate right
     new_carry = cpu.A.msb()
-    cpu.A.set_bit(7, cpu.flags["carry"]) # swap the msb and carry bit
-    cpu.flags["carry"] = new_carry
+    cpu.A.set_bit(7, cpu.F["carry"]) # swap the msb and carry bit
+    cpu.F["carry"] = new_carry
     cpu.clock.pulse(4)
 
 
+def RC(cpu):
+    if cpu.F["carry"]:
+        RET(cpu)
+    else:
+        cpu.clock.pulse(6)
+
+
 def RET(cpu):
-    cpu.SP.inc()
     cpu.Z.load(cpu.memory, cpu.SP.value)
     cpu.SP.inc()
     cpu.W.load(cpu.memory, cpu.SP.value)
+    cpu.SP.inc()
 
     cpu.PC.transfer_from(cpu.WZ)
     cpu.clock.pulse(10)
@@ -719,18 +850,100 @@ def RET(cpu):
 
 def RLC(cpu):
     cpu.A.rol()
-    cpu.flags["carry"] = cpu.A.lsb()
+    cpu.F["carry"] = cpu.A.lsb()
     cpu.clock.pulse(4)
+
+
+def RM(cpu):
+    if cpu.F["sign"]:
+        RET(cpu)
+    else:
+        cpu.clock.pulse(6)
+
+
+def RNC(cpu):
+    if not cpu.F["carry"]:
+        RET(cpu)
+    else:
+        cpu.clock.pulse(6)
+
+
+def RNZ(cpu):
+    if not cpu.F["zero"]:
+        RET(cpu)
+    else:
+        cpu.clock.pulse(6)
+
+
+def RP(cpu):
+    if not cpu.F["sign"]:
+        RET(cpu)
+    else:
+        cpu.clock.pulse(6)
+
+
+def RPE(cpu):
+    if cpu.F["parity"]:
+        RET(cpu)
+    else:
+        cpu.clock.pulse(6)
+
+
+def RPO(cpu):
+    if not cpu.F["parity"]:
+        RET(cpu)
+    else:
+        cpu.clock.pulse(6)
 
 
 def RRC(cpu):
     cpu.A.ror()
-    cpu.flags["carry"] = cpu.A.msb()
+    cpu.F["carry"] = cpu.A.msb()
     cpu.clock.pulse(4)
 
 
+def RST0(cpu):
+    cpu.PC.value = 0x0000
+    cpu.clock.pulse(12)
+
+def RST1(cpu):
+    cpu.PC.value = 0x0008
+    cpu.clock.pulse(12)
+
+def RST2(cpu):
+    cpu.PC.value = 0x0010
+    cpu.clock.pulse(12)
+
+def RST3(cpu):
+    cpu.PC.value = 0x00018
+    cpu.clock.pulse(12)
+
+def RST4(cpu):
+    cpu.PC.value = 0x0020
+    cpu.clock.pulse(12)
+
+def RST5(cpu):
+    cpu.PC.value = 0x0028
+    cpu.clock.pulse(12)
+
+def RST6(cpu):
+    cpu.PC.value = 0x0030
+    cpu.clock.pulse(12)
+
+def RST7(cpu):
+    cpu.PC.value = 0x0038
+    cpu.clock.pulse(12)
+
+
+def RZ(cpu):
+    if cpu.F["zero"]:
+        RET(cpu)
+    else:
+        cpu.clock.pulse(6)
+
+
 def SBB(cpu, register):
-    cpu.A.value -= register.value + cpu.flags["carry"]
+    cpu.A.value -= register.value + cpu.F["carry"]
     cpu.update_flags()
     cpu.clock.pulse(4)
 
@@ -756,26 +969,50 @@ def SBBL(cpu):
     SBB(cpu, cpu.L)
 
 def SBBM(cpu):
-    cpu.A.value -= cpu.M.value + cpu.flags["carry"]
+    cpu.A.value -= cpu.M.value + cpu.F["carry"]
     cpu.update_flags()
     cpu.clock.pulse(7)
 
 
 def SBI(cpu):
     cpu.fetch_byte()
-    cpu.A.value -= cpu.Z.value + cpu.flags["carry"]
+    cpu.A.value -= cpu.Z.value + cpu.F["carry"]
     cpu.update_flags()
     cpu.clock.pulse(7)
 
 
+def SHLD(cpu):
+    cpu.fetch_double()
+    cpu.L.store(cpu.memory, cpu.WZ.value)
+    cpu.WZ.inc()
+    cpu.H.store(cpu.memory, cpu.WZ.value)
+    cpu.clock.pulse(16)
+
+
+def SPHL(cpu):
+    cpu.SP.transfer_from(cpu.HL)
+    cpu.clock.pulse(6)
+
+
 def STA(cpu):
-    cpu.fetch_address()
+    cpu.fetch_double()
     cpu.A.store(cpu.memory, cpu.WZ.value)
     cpu.clock.pulse(13)
 
 
+def STAX(cpu, register):
+    cpu.A.store(cpu.memory, register.value)
+    cpu.clock.pulse(7)
+
+def STAXB(cpu):
+    STAX(cpu, cpu.BC)
+
+def STAXD(cpu):
+    STAX(cpu, cpu.DE)
+
+
 def STC(cpu):
-    cpu.flags.set_flag("carry")
+    cpu.F.set_flag("carry")
     cpu.clock.pulse(4)
 
 
@@ -818,6 +1055,11 @@ def SUI(cpu):
     cpu.clock.pulse(7)
 
 
+def XCHG(cpu):
+    cpu.HL.value, cpu.DE.value = cpu.DE.value, cpu.HL.value
+    cpu.clock.pulse(4)
+
+
 def XRA(cpu, register):
     cpu.A.xor_reg(register)
     cpu.update_flags()
@@ -857,7 +1099,13 @@ def XRI(cpu):
     cpu.clock.pulse(7)
 
 
+def XTHL(cpu):
+    cpu.H.value, cpu.L.value, cpu.memory[cpu.SP.value], cpu.memory[cpu.SP.value + 1] = cpu.memory[cpu.SP.value + 1], cpu.memory[cpu.SP.value], cpu.L.value, cpu.H.value
+    cpu.clock.pulse(16)
+
+
 # instruction table
+
 
 instruction_table = {
     0x00 : NOP,
@@ -894,7 +1142,6 @@ instruction_table = {
     0x24 : INRH,
     0x25 : DCRH,
     0x26 : MVIH,
-    0x27 : DAA,
     0x29 : DADH,
     0x2A : LHLD,
     0x2B : DCXH,
@@ -1069,7 +1316,6 @@ instruction_table = {
     0xD7 : RST2,
     0xD8 : RC,
     0xDA : JC,
-    0xDB : IN,
     0xDC : CC,
     0xDE : SBI,
     0xDF : RST3,
@@ -1091,7 +1337,6 @@ instruction_table = {
     0xF0 : RP,
     0xF1 : POPPSW,
     0xF2 : JP,
-    0xF3 : DI,
     0xF4 : CP,
     0xF5 : PUSHPSW,
     0xF6 : ORI,
@@ -1099,7 +1344,6 @@ instruction_table = {
     0xF8 : RM,
     0xF9 : SPHL,
     0xFA : JM,
-    0xFB : EI,
     0xFC : CM,
     0xFE : CPI,
     0xFF : RST7
