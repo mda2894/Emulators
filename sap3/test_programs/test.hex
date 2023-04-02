@@ -6,8 +6,9 @@
 03
 80 ; ADD B
 81 ; ADD C
-32 ; STA 000D
-0D
+32 ; STA 000E
+0E
 00
 D3 ; OUT
+FF
 76 ; HLT
